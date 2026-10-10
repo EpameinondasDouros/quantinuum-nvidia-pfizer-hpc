@@ -62,7 +62,10 @@ print(f"FCI {rec.fci_energy:.6f} Ha | CX (Qiskit basis) {gates['cnot_count']} | 
 print(f"{'backend':<20}{'energy (Ha)':>14}{'stderr':>11}{'err mHa':>10}{'groups':>8}{'shots':>9}")
 for e in runs:
     print(f"{e.meta['label']:<20}{e.energy:>14.6f}{e.stderr:>11.6f}{1000 * (e.energy - rec.fci_energy):>10.3f}"
-          f"{e.num_groups:>8}{e.total_shots:>9}" + (f"  job={e.meta['ionq_job_id']}" if "ionq_job_id" in e.meta else ""))
+          f"{e.num_groups:>8}{e.total_shots:>9}" + (f"  job={e.meta['ionq_job_id']}" if "ionq_job_id" in e.meta else "")
+          + (f"  (1e-3 prob rounding: |bias| <= {1000 * e.meta['probability_rounding_bound_ha']:.1f} mHa)"
+             if "probability_rounding_bound_ha" in e.meta else ""))
+print("local_noisy = GenQAI depolarizing approximation (NOT IonQ's model); ionq_noisy = IonQ's simulator noise model")
 
 out = ROOT / "results" / args.system / f"ionq_demo_{rec.geometry_id}.json"
 out.parent.mkdir(parents=True, exist_ok=True)

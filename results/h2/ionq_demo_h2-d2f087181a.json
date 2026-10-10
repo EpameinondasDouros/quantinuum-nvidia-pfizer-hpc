@@ -38,7 +38,7 @@
    "native_depth": 67
   }
  },
- "shots_requested": 2000,
+ "shots_requested": 4000,
  "runs": [
   {
    "energy": -1.1341476666770949,
@@ -75,53 +75,53 @@
    "meta": {
     "allocation": "uniform",
     "predicted_stderr_at_shots": {
-     "shots": 2000,
-     "stderr": 0.007997939716518415
+     "shots": 4000,
+     "stderr": 0.005655397409071384
     },
     "label": "exact_probs"
    },
    "error_mha": 1.3322676295501878e-12
   },
   {
-   "energy": -1.1357787814635454,
-   "stderr": 0.00791299784408571,
+   "energy": -1.1298707243897514,
+   "stderr": 0.005616908393268234,
    "num_groups": 2,
-   "total_shots": 2000,
+   "total_shots": 4000,
    "shots_per_group": [
-    1000,
-    1000
+    2000,
+    2000
    ],
    "group_means": [
-    -0.046525949456127313,
+    -0.04061789238233337,
     -0.6875115485465485
    ],
    "group_stderrs": [
-    0.0056528169590953,
-    0.005537255214225698
+    0.004028241722889263,
+    0.003914451241277796
    ],
    "backend": "local_shots",
    "meta": {
     "allocation": "uniform",
     "label": "local_shots"
    },
-   "error_mha": -1.6311147864489506
+   "error_mha": 4.276942287344987
   },
   {
-   "energy": -1.1231215933595304,
-   "stderr": 0.008560852555781677,
+   "energy": -1.1155116874785667,
+   "stderr": 0.0060663817700118685,
    "num_groups": 2,
-   "total_shots": 2000,
+   "total_shots": 4000,
    "shots_per_group": [
-    1000,
-    1000
+    2000,
+    2000
    ],
    "group_means": [
-    -0.0513262458285849,
-    -0.670054064070076
+    -0.04301804056856218,
+    -0.6707523634491349
    ],
    "group_stderrs": [
-    0.005611073858473566,
-    0.006465604893325004
+    0.004015757942390821,
+    0.004546941381594597
    ],
    "backend": "local_noisy",
    "meta": {
@@ -134,7 +134,7 @@
     },
     "label": "local_noisy"
    },
-   "error_mha": 11.026073317565999
+   "error_mha": 18.635979198529775
   },
   {
    "energy": -1.1336004409348088,
@@ -156,7 +156,7 @@
    "backend": "ionq_ideal",
    "meta": {
     "allocation": "uniform",
-    "ionq_job_id": "01a127d1-9023-7598-9ecb-c1889662eaf9",
+    "ionq_job_id": "01a127d4-f8c0-77b6-ad9f-8c3d5ac3c4e9",
     "ionq_noise_model": "ideal",
     "note": "IonQ ideal sim: exact probabilities rounded to 1e-3, stderr=0",
     "probability_rounding_bound_ha": 0.0018307107349708667,
@@ -165,56 +165,56 @@
    "error_mha": 0.5472257422876048
   },
   {
-   "energy": -1.1143291199218224,
-   "stderr": 0.008960546777664027,
+   "energy": -1.1130034419427697,
+   "stderr": 0.006186299405553357,
    "num_groups": 2,
-   "total_shots": 2000,
+   "total_shots": 4000,
    "shots_per_group": [
-    1000,
-    1000
+    2000,
+    2000
    ],
    "group_means": [
-    -0.04209490665078186,
-    -0.6704929298101711
+    -0.04061789238233336,
+    -0.6706442660995667
    ],
    "group_stderrs": [
-    0.005687478831237462,
-    0.006924159378504436
+    0.004028241722889264,
+    0.0046950579290487935
    ],
    "backend": "ionq_noisy",
    "meta": {
     "allocation": "uniform",
-    "ionq_job_id": "01a127d1-a809-7166-a7e1-91045150538b",
+    "ionq_job_id": "01a127d5-1168-76a1-83de-cadb08a76403",
     "ionq_noise_model": "aria-1",
     "label": "ionq_noisy/aria-1"
    },
-   "error_mha": 19.818546755274056
+   "error_mha": 21.144224734326755
   },
   {
-   "energy": -1.1276728710483102,
-   "stderr": 0.008637593697131105,
+   "energy": -1.1066378783065078,
+   "stderr": 0.006703525418927915,
    "num_groups": 2,
-   "total_shots": 2000,
+   "total_shots": 4000,
    "shots_per_group": [
-    1000,
-    1000
+    2000,
+    2000
    ],
    "group_means": [
-    -0.04911072442591216,
-    -0.6768208631615285
+    -0.04227953343433791,
+    -0.6626170614113004
    ],
    "group_stderrs": [
-    0.005630887394138165,
-    0.006549895574072527
+    0.004019679594375194,
+    0.005364646213943316
    ],
    "backend": "ionq_noisy",
    "meta": {
     "allocation": "uniform",
-    "ionq_job_id": "01a127d1-c01e-72a7-baa3-95961ab9e8c1",
+    "ionq_job_id": "01a127d5-292f-7008-be64-b1a8b594e37c",
     "ionq_noise_model": "forte-1",
     "label": "ionq_noisy/forte-1"
    },
-   "error_mha": 6.4747956287862785
+   "error_mha": 27.509788370588595
   }
  ]
 }

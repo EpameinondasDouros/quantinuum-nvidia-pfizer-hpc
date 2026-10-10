@@ -18,6 +18,7 @@ uv venv -p 3.12 .venv && uv pip install -p .venv/bin/python -e ".[dev]"
 | --- | --- | --- |
 | Hamiltonians + HF/CCSD/FCI | `python scripts/make_hamiltonians.py` | `data/<system>/hamiltonians.jsonl` |
 | ADAPT-VQE teacher | `python scripts/make_teacher.py` | `data/<system>/teacher.jsonl` |
+| Measured energy (local + IonQ sim) | `python scripts/run_ionq_demo.py --system h2 --shots 4000` | `results/<system>/ionq_demo_<id>.json` |
 
 Systems (`genqai/chemistry.py`): `h2` (2 qubits), `lih4` (4), `lih6` (6), `h4` (8, linear chain a-b-a).
 
@@ -25,3 +26,9 @@ Systems (`genqai/chemistry.py`): `h2` (2 qubits), `lih4` (4), `lih6` (6), `h4` (
 
 See `genqai/schema.py`. Qiskit qubit order (qubit 0 rightmost), total energies in Hartree,
 operator IDs index `genqai.pool.get_pool(system)`, circuit = HF then `exp(-i θ_t G_{op_t})` in order.
+
+## IonQ
+
+`genqai/measure.py` groups Pauli terms qubit-wise, measures each group in its product basis and
+reports energy ± stderr. IonQ backends need `IONQ_API_KEY` (environment or a `.env` in the repo
+root) and `qiskit-ionq`; without it the demo runs only the local backends.
