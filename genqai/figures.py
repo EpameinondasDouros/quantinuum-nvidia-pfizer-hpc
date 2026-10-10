@@ -504,8 +504,8 @@ def fig_ionq(results_dir, out_dir):
 
 FRONTIER_STYLE = {  # curve -> (color, marker, linestyle, label); regression comparators share one hue
     "budget": (GEN_MODE_COLOR["oneshot"], "v", "-", "budget-conditioned policy (one model, one-shot)"),
-    "budget_sft": (GEN_MODE_COLOR["oneshot"], "v", ":", "budget policy before GRPO (SFT on pruned labels)"),
-    "adapt": (BASE_COLOR["adapt"], "o", "-", "ADAPT truncated at k ops (fresh run, re-optimised)"),
+    "budget_sft": (GEN_MODE_COLOR["oneshot"], "v", ":", "budget policy before GRPO (budget SFT only)"),
+    "adapt": (BASE_COLOR["adapt"], "o", "-", "ADAPT truncated at k ops (fresh run, re-optimised; runs that stopped earlier drop out)"),
     "regress_adapt": (BASE_COLOR["angle_regression"], "s", "-", "angle KRR on ADAPT k-op prefixes (one-shot)"),
     "regress_pruned": (BASE_COLOR["angle_regression"], "D", "--", "angle KRR on pruned n-op labels (one-shot)"),
     "regress_prefix": (BASE_COLOR["angle_regression"], "^", ":", "angle KRR on canonical n-op prefixes (one-shot)"),
