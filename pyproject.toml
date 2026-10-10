@@ -1,0 +1,23 @@
+[project]
+name = "genqai"
+version = "0.1.0"
+description = "GenQAI: hardware-aware generative quantum circuit synthesis (ADAPT-GQE reproduction)"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+dependencies = [
+  "qiskit>=2.0", "qiskit-nature==0.8.*", "qiskit-algorithms==0.4.*", "pyscf>=2.6",
+  "numpy", "scipy", "torch>=2.2", "matplotlib", "qiskit-ionq>=1.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["genqai"]
+
+[tool.pytest.ini_options]
+filterwarnings = ["ignore::DeprecationWarning", "ignore::scipy.sparse.SparseEfficiencyWarning"]
