@@ -21,8 +21,8 @@ Branches: one per task or lane, named `feat/<short-name>`. Only merge to main af
 | A1 | Hamiltonians for h2 (2q), lih4 (4q), lih6 (6q), h4 (8q) with HF / CCSD / FCI, geometry splits | Udaya | ✅ | main `3f621dc` | `scripts/make_hamiltonians.py`; built from PySCF CASCI integrals; 207 geometries |
 | A2 | Gate G1 chemistry: qubit-Hamiltonian sector ground state equals PySCF CASCI | Udaya | ✅ | main `tests/test_core.py` | Agrees to 1e-7 on all four systems |
 | B1 | ADAPT-VQE teacher labels with per-step cost logging | Udaya | ✅ | main `scripts/make_teacher.py` | All 207 converged and under 1.6 mHa (grad_tol 1e-4) |
-| B2 | Shared eval harness `genqai/evaluate.py` + baselines: UCCSD-VQE, fresh ADAPT, warm ADAPT, NN reuse, NN+refine | Udaya (agent) | 🟨 | `feat/baselines` | Writes `results/<system>/<method>.jsonl` |
-| B3 | Cross-check our ADAPT against `qiskit_algorithms.AdaptVQE` on h2 / lih4 | Udaya (agent) | 🟨 | `feat/baselines` | |
+| B2 | Shared eval harness `genqai/evaluate.py` + baselines: UCCSD-VQE, fresh ADAPT, warm ADAPT, NN reuse, NN+refine | Udaya (agent) | ✅ | main `051b65d` | `results/<system>/<method>.jsonl`. nn_refine and warm ADAPT hit 1.6 mHa on every test geometry with 10–30× fewer gradient evals than fresh ADAPT: this is the bar the model must beat |
+| B3 | Cross-check our ADAPT against `qiskit_algorithms.AdaptVQE` on h2 / lih4 | Udaya (agent) | ✅ | main `tests/test_baselines.py` | Agree within 1e-5 Ha |
 | C1 | Hamiltonian-conditioned transformer (operators + von Mises angle head), SFT, one-shot / refine / best-of-K | Udaya (agent) | 🟨 | `feat/model` | Budget-conditioning input built in for D3 |
 | E1 | Grouped Pauli measurement, finite-shot energy with error bars, local ideal + noisy | Udaya (agent) | 🟨 | `feat/ionq` | |
 | E2 | Same experiment on IonQ simulator, ideal + noisy (forte-1 / aria-1), one job | Udaya (agent) | 🟨 | `feat/ionq` | Key in local `.env` |
