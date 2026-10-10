@@ -62,12 +62,12 @@ def get_record(system: str, params) -> tuple[HamiltonianRecord, str]:
         rec = build_record(SYSTEMS[system], params)
         rec.split = "unseen"
         return rec, f"built live with PySCF in {time.perf_counter() - t0:.1f}s (not in any training data)"
-    except ImportError:
+    except (ImportError, OSError) as exc:  # no PySCF, or a PySCF build missing a compiled module
         recs = load_hamiltonians(system)
         x = np.array(params)
         near = min(recs, key=lambda r: np.linalg.norm(np.array(list(r.geometry_params.values())) - x))
-        return near, (f"PySCF NOT AVAILABLE: snapped to nearest stored geometry {near.geometry_params} "
-                      f"(split={near.split})")
+        return near, (f"PySCF NOT USABLE ({type(exc).__name__}: {exc}): snapped to nearest stored geometry "
+                      f"{near.geometry_params} (split={near.split})")
 
 
 def training_context(record: HamiltonianRecord) -> dict:
@@ -159,7 +159,8 @@ def compare(record: HamiltonianRecord, gens: dict[str, tuple[GeneratedCircuit, d
     A baseline that fails (e.g. a missing optional package) is reported and skipped.
     """
     train = load_train_set(record.system)
-    evals = [run_method(m, record, train) for m in ("hf", "ccsd", "fci")]
+    classical = ("hf", "ccsd", "fci") if np.isfinite(record.ccsd_energy) else ("hf", "fci")
+    evals = [run_method(m, record, train) for m in classical]
     for circ, info in gens.values():
         evals.append(score_circuit(record, circ, circ.source, model_forward_passes=1, runtime_s=info["runtime_s"]))
     for m in ("nn_reuse_gauge", "angle_regression", "nn_refine_canon") + (("adapt",) if live_adapt else ()):

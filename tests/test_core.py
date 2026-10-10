@@ -55,3 +55,24 @@ def test_simulator_matches_qiskit_and_vqe_reaches_fci(rec):
     _, e_opt, _ = ev.optimize(ops * 2)
     assert e_opt - rec.fci_energy < 1.6e-3
     assert gate_stats(qc)["cnot_count"] > 0
+
+
+def test_build_record_matches_pyscf_casci_and_stored_data(rec):
+    """RHF-only active-space build == PySCF CASCI, and reproduces the committed dataset."""
+    from pyscf import gto, mcscf, scf
+
+    from genqai.data import load_hamiltonians
+
+    mol = gto.M(atom=[(s, xyz) for s, xyz in rec.coordinates], basis=rec.basis, unit="Angstrom", verbose=0)
+    mf = scf.RHF(mol)
+    mf.conv_tol = 1e-11
+    mf.kernel()
+    cas = mcscf.CASCI(mf, len(rec.active_orbitals), rec.active_electrons)
+    cas.fcisolver.conv_tol = 1e-12
+    mo = cas.sort_mo(rec.active_orbitals, base=0)
+    assert abs(cas.kernel(mo)[0] - rec.fci_energy) < 1e-8
+    assert abs(cas.get_h1eff(mo)[1] - rec.energy_shift) < 1e-8
+    stored = {r.geometry_id: r for r in load_hamiltonians(rec.system)}.get(rec.geometry_id)
+    if stored is not None:
+        a, b = rec.sparse_pauli_op(), stored.sparse_pauli_op()
+        assert (a - b).simplify(atol=1e-9).size <= 1 and abs(rec.fci_energy - stored.fci_energy) < 1e-9

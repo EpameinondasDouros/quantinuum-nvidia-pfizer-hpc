@@ -97,7 +97,9 @@ def main(system: str = "h2", r: float = 1.33, a: float = 1.1, b: float = 1.7, sh
         rec, how = get_record(system, params)
         print(f"source: {how}")
         print(f"{rec.num_qubits} qubits, {len(rec.pauli_terms)} Pauli terms, {rec.mapping} mapping")
-        print(f"HF   = {rec.hf_energy:.6f} Ha\nCCSD = {rec.ccsd_energy:.6f} Ha\nFCI  = {rec.fci_energy:.6f} Ha  (exact reference)")
+        ccsd = (f"{rec.ccsd_energy:.6f} Ha" if rec.ccsd_energy == rec.ccsd_energy
+                else "n/a (PySCF's CC module is not in Qollab's WebAssembly build)")
+        print(f"HF   = {rec.hf_energy:.6f} Ha\nCCSD = {ccsd}\nFCI  = {rec.fci_energy:.6f} Ha  (exact reference)")
         ctx = training_context(rec)
         rng = ", ".join(f"{k} in [{lo:g}, {hi:g}]" for k, (lo, hi) in ctx["range"].items())
         print(f"training range: {rng} -> this geometry is {'INSIDE' if ctx['inside_range'] else 'OUTSIDE (extrapolation)'}")

@@ -1,10 +1,12 @@
 """Workstream A: molecular systems, active spaces, qubit Hamiltonians and classical references.
 
-Every qubit Hamiltonian is built from PySCF's own CASCI active-space integrals, so the
-Hamiltonian, the HF/CCSD/FCI references and the orbital choice all come from one SCF.
+Every qubit Hamiltonian is built from frozen-core active-space integrals of one PySCF RHF, so the
+Hamiltonian, the HF/CCSD/FCI references and the orbital choice all come from one SCF. Only
+gto/scf/ao2mo are used for the Hamiltonian and FCI (exact sector diagonalisation), because those are
+the PySCF parts that run in Qollab's browser runtime; tests check equality with PySCF CASCI.
 All energies stored in a HamiltonianRecord are TOTAL energies in Hartree:
     E_total = <psi| H_qubit |psi> + energy_shift
-where energy_shift = nuclear repulsion + frozen-core energy (PySCF CASCI ecore).
+where energy_shift = nuclear repulsion + frozen-core energy.
 PySCF is imported only inside build_record, so stored records (data/<system>/hamiltonians.jsonl),
 pools and circuits work in runtimes where PySCF is not installed.
 """
@@ -106,8 +108,55 @@ def geometry_id(spec: SystemSpec, params: tuple[float, ...]) -> str:
     return f"{spec.name}-" + hashlib.sha1(key.encode()).hexdigest()[:10]
 
 
+def _active_space_integrals(mol, mf, act: list[int], nelecas: int):
+    """Frozen-core active-space (h1, h2 chemists' order, ecore) from RHF quantities only.
+
+    Same result as PySCF's CASCI.get_h1eff / get_h2eff, but uses only gto/scf/ao2mo, which are
+    the PySCF parts present in Qollab's WebAssembly build (no libmcscf / libfci / libcc).
+    Core orbitals are the lowest non-active MOs, matching CASCI.sort_mo.
+    """
+    from pyscf import ao2mo
+
+    C = mf.mo_coeff
+    ncore = (mol.nelectron - nelecas) // 2
+    core = [i for i in range(C.shape[1]) if i not in act][:ncore]
+    hcore = mf.get_hcore()
+    dm_core = 2.0 * C[:, core] @ C[:, core].T
+    veff = mf.get_veff(mol, dm_core) if core else np.zeros_like(hcore)
+    ecore = mol.energy_nuc() + np.einsum("ij,ji", dm_core, hcore) + 0.5 * np.einsum("ij,ji", dm_core, veff)
+    c_act = C[:, act]
+    h1 = c_act.T @ (hcore + veff) @ c_act
+    eri = ao2mo.incore.full(mf._eri, c_act) if mf._eri is not None else ao2mo.kernel(mol, c_act)
+    return h1, ao2mo.restore(1, eri, len(act)), float(ecore)
+
+
+def _sector_ground_energy(energy: ElectronicEnergy, ncas: int, nelecas: int) -> float:
+    """Exact (FCI) electronic energy in the (n_alpha, n_beta) sector, by dense diagonalisation.
+
+    Jordan-Wigner basis index bit j = occupation of spin orbital j (alpha 0..ncas-1, beta after).
+    """
+    op = JordanWignerMapper().map(energy.second_q_op())
+    n = nelecas // 2
+    idx = [i for i in range(2 ** (2 * ncas))
+           if bin(i & ((1 << ncas) - 1)).count("1") == n and bin(i >> ncas).count("1") == n]
+    H = op.to_matrix(sparse=True)[idx][:, idx].toarray()
+    return float(np.linalg.eigvalsh(H)[0])
+
+
+def _ccsd_energy(mf, frozen: list[int]) -> float:
+    """Frozen-core CCSD total energy; NaN where PySCF's CC module is unavailable (Qollab/Pyodide)."""
+    try:
+        from pyscf import cc
+    except OSError:
+        return float("nan")
+    mycc = cc.CCSD(mf, frozen=frozen)
+    mycc.conv_tol = 1e-10
+    mycc.kernel()
+    return float(mycc.e_tot) if mycc.converged else float("nan")
+
+
 def build_record(spec: SystemSpec, params: tuple[float, ...]) -> HamiltonianRecord:
-    from pyscf import ao2mo, cc, gto, mcscf, scf
+    from pyscf import gto, scf
 
     params = tuple(float(p) for p in params)
     atoms = spec.atoms(params)
@@ -122,23 +171,13 @@ def build_record(spec: SystemSpec, params: tuple[float, ...]) -> HamiltonianReco
 
     act = _select_active_orbitals(mol, mf, spec)
     ncas, nelecas = spec.num_active_orbitals, spec.active_electrons
-    cas = mcscf.CASCI(mf, ncas, nelecas)
-    cas.fcisolver.conv_tol = 1e-12
-    mo = cas.sort_mo(act, base=0)
-    cas.kernel(mo)
-    e_fci = float(cas.e_tot)
-
-    h1, ecore = cas.get_h1eff(mo)
-    h2 = ao2mo.restore(1, cas.get_h2eff(mo), ncas)
+    h1, h2, ecore = _active_space_integrals(mol, mf, act, nelecas)
     energy = ElectronicEnergy.from_raw_integrals(h1, h2)
+    e_fci = _sector_ground_energy(energy, ncas, nelecas) + ecore
     qubit_op: SparsePauliOp = mapper_for(spec).map(energy.second_q_op()).simplify(atol=1e-12)
     qubit_op = qubit_op.sort()  # canonical lexicographic Pauli order
 
-    frozen = [i for i in range(mf.mo_coeff.shape[1]) if i not in act]
-    mycc = cc.CCSD(mf, frozen=frozen)
-    mycc.conv_tol = 1e-10
-    mycc.kernel()
-    e_ccsd = float(mycc.e_tot) if mycc.converged else float("nan")
+    e_ccsd = _ccsd_energy(mf, [i for i in range(mf.mo_coeff.shape[1]) if i not in act])
 
     terms = [
         {"pauli": lbl, "coefficient": float(np.real(c))}
