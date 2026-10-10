@@ -525,15 +525,21 @@ def fig_learning_curve(results_dir, out_dir):
         for j, (key, ylabel) in enumerate(metrics):
             ax = axes[i, j]
             scale = 100 if key.startswith("frac") else 1
+            ends = []
             for m in [m for m in LC_METHODS if any(r["method"] == m for r in rs)]:
-                st = style(m)
+                st = {**style(m), **({"label": "SFT transformer"} if m == "sft_oneshot" else {})}
                 ys = [[scale * max(r[key], ERR_FLOOR) for r in rs if r["method"] == m and r["n_train"] == n] for n in ns]
-                mean = [np.mean(y) for y in ys]
+                mid = [np.median(y) for y in ys]
                 ax.vlines(ns, [min(y) for y in ys], [max(y) for y in ys], color=st["color"], lw=1, alpha=0.5)
-                ax.plot(ns, mean, color=st["color"], marker=LC_MARKER[m], ms=6, mec=SURFACE, mew=1, label=st["label"])
-                if j == 0:  # direct label at the right end, ink text beside the colored mark
-                    ax.annotate(st["label"], (ns[-1], mean[-1]), xytext=(6, 0), textcoords="offset points",
-                                va="center", fontsize=7, color=INK2)
+                ax.plot(ns, mid, color=st["color"], marker=LC_MARKER[m], ms=6, mec=SURFACE, mew=1, label=st["label"])
+                ends.append((np.log10(mid[-1]), st["label"]))
+            if j == 0:  # direct labels at the right end (ink text), nudged apart by >= 0.45 decades
+                ends.sort()
+                for k in range(1, len(ends)):
+                    ends[k] = (max(ends[k][0], ends[k - 1][0] + 0.45), ends[k][1])
+                for y, lab in ends:
+                    ax.annotate(lab, (ns[-1], 10 ** y), xytext=(8, 0), textcoords="offset points", va="center",
+                                fontsize=7, color=INK2)
             ax.set_xscale("log")
             ax.set_xticks(ns, [f"{n}\n{cost[n] / 1000:.1f}k" for n in ns])
             ax.minorticks_off()
@@ -552,7 +558,7 @@ def fig_learning_curve(results_dir, out_dir):
         for h, lab in zip(*ax.get_legend_handles_labels()):
             seen.setdefault(lab, h)
     fig.legend(seen.values(), seen.keys(), loc="lower center", ncol=len(seen), bbox_to_anchor=(0.5, -0.03))
-    fig.text(0.01, -0.07, "Nested random TRAIN subsets, 3 subset seeds per N (line = mean, bar = seed range; the "
+    fig.text(0.01, -0.07, "Nested random TRAIN subsets, 3 subset seeds per N (line = median over seeds, bar = seed range; the "
              "largest N is the full TRAIN set, one run). Teacher evaluations = ADAPT pool-gradient + energy "
              "evaluations summed over the N geometries. All methods one-shot, 0 energy evaluations at inference. "
              "Shaded: below 1.6 mHa.", fontsize=7.5, color=INK2, wrap=True)
