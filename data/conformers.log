@@ -1,0 +1,300 @@
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+cuequivariance or cuequivariance_torch is not available. Cuequivariance acceleration will be disabled.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+relaxed start geometry, E = -23090.36328125 eV
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+MD trajectory 0: 16 frames
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+MD trajectory 1: 16 frames
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+MD trajectory 2: 16 frames
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+MD trajectory 3: 16 frames
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+MD trajectory 4: 16 frames
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.modelWARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+15 reference conformers
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+NEB 8-12: 6 images
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+NEB 2-13: 6 images
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+NEB 1-8: 6 images
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+WARNING:root:Default dtype float32 does not match model dtype float64, converting models to float32.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+Using MACE-OFF23 MODEL for MACECalculator with /Users/epadouros/.cache/mace/MACE-OFF23_small.model
+Using float32 for MACECalculator, which is faster but less accurate. Recommended for MD. Use float64 for geometry optimization.
+wrote 100 conformers to /Users/epadouros/Personal/Hackathons/quantinuum-nvidia-pfizer-hpc/data/conformers.extxyz (MD 78, NEB 16, OoD 6)
