@@ -29,7 +29,7 @@ from genqai.circuits import build_circuit, gate_stats
 from genqai.data import DATA_DIR, load_hamiltonians, load_teacher
 from genqai.features import budget_vector, fit_featurizer
 from genqai.model import Cond, GQEPolicy, build_policy
-from genqai.rl import record_train_time
+from genqai.rl import budget_cond, cnot_estimate, record_train_time
 from genqai.schema import GeneratedCircuit, load_jsonl
 from genqai.sim import Evaluator
 
@@ -71,9 +71,9 @@ def parse_args(argv=None):
     return p.parse_args(argv)
 
 
-def oneshot_errors(policy, records) -> tuple[list[float], list[bool]]:
-    """Greedy one-shot circuits -> exact energy error (mHa) per record."""
-    gen = policy.sample(policy.condition(records), greedy=True)
+def oneshot_errors(policy, records, cnot_budgets=None) -> tuple[list[float], list[bool]]:
+    """Greedy one-shot circuits (optionally CX-budget conditioned) -> exact energy error (mHa) per record."""
+    gen = policy.sample(budget_cond(policy, records, cnot_budgets), greedy=True)
     errs = [1000 * (Evaluator(r).energy(o, a) - r.fci_energy) for r, (o, a, _, _) in zip(records, gen)]
     return errs, [v for *_, v in gen]
 
@@ -129,6 +129,9 @@ def main(argv=None):
     own_budget = torch.from_numpy(np.stack(budgets)).to(dev)
     force = torch.tensor(force, device=dev)
     val_cond = policy.condition(val)
+    # budget-conditioned training is validated where it is used: conditioned on each VAL label's CX
+    val_budgets = ([cnot_estimate(a.system, teacher[r.geometry_id].operators) for r in val]
+                   if a.budget_targets else None)
     val_ops = [teacher[r.geometry_id].operators for r in val]
     val_angles = [teacher[r.geometry_id].angles for r in val]
 
@@ -167,7 +170,7 @@ def main(argv=None):
         policy.eval()
         with torch.no_grad():
             vl, vce, vang = (t.item() for t in nll(policy, val_cond, val_ops, val_angles, a.lambda_theta))
-        errs, valid = oneshot_errors(policy, val)
+        errs, valid = oneshot_errors(policy, val, val_budgets)
         ab = np.abs(errs)
         rec = {
             "epoch": epoch, "lr": sched.get_last_lr()[0], "train": np.mean(tot, 0).tolist(),

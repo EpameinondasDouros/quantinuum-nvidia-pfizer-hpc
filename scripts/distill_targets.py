@@ -44,7 +44,7 @@ def main(argv=None):
     cands: dict[str, list] = {}
     for c in replay:
         angles, e = c.angles, c.meta["energy"]
-        if a.polish:
+        if a.polish and c.operators:
             x, e = anchored_minimize(ev[c.geometry_id], c.operators, c.angles, a.mu)
             angles = [wrap_angle(t) for t in x]
         cands.setdefault(c.geometry_id, []).append((cnot_estimate(a.system, c.operators), e, c.operators, angles))

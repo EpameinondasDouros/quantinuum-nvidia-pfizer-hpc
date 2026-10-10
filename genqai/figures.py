@@ -500,6 +500,85 @@ def fig_ionq(results_dir, out_dir):
     return _save(fig, out_dir, "fig6_ionq")
 
 
+# ------------------------------------------------------------ figure 7: CX-budget frontier
+
+FRONTIER_STYLE = {  # curve -> (color, marker, linestyle, label); regression comparators share one hue
+    "budget": (GEN_MODE_COLOR["oneshot"], "v", "-", "budget-conditioned policy (one model, one-shot)"),
+    "budget_sft": (GEN_MODE_COLOR["oneshot"], "v", ":", "budget policy before GRPO (SFT on pruned labels)"),
+    "adapt": (BASE_COLOR["adapt"], "o", "-", "ADAPT truncated at k ops (fresh run, re-optimised)"),
+    "regress_adapt": (BASE_COLOR["angle_regression"], "s", "-", "angle KRR on ADAPT k-op prefixes (one-shot)"),
+    "regress_pruned": (BASE_COLOR["angle_regression"], "D", "--", "angle KRR on pruned n-op labels (one-shot)"),
+}
+FRONTIER_GROUPS = (("test (grid)", lambda s: s.startswith("test_") and s != "test_fresh"),
+                   ("test_fresh", lambda s: s == "test_fresh"))
+
+
+def fig_budget_frontier(results_dir, out_dir):
+    """Per system: fraction of held-out geometries within 1.6 mHa, and median |err|, vs mean compiled CX
+    for every level of each frontier curve (results/<system>/*_frontier.jsonl, scripts/budget_frontier.py)."""
+    rows = {}
+    for s in SYSTEMS:
+        seen = {}
+        for p in sorted((Path(results_dir) / s).glob("*_frontier.jsonl")):
+            for r in load_jsonl(p):
+                seen[(r["curve"], r["level"], r["geometry_id"])] = r
+        if seen:
+            rows[s] = list(seen.values())
+    if not rows:
+        return None
+    systems = list(rows)
+    fig, axes = plt.subplots(2 * len(systems), 2, figsize=(10, 3.0 * 2 * len(systems)), sharex="row", squeeze=False)
+    for i, s in enumerate(systems):
+        for j, (gname, pred) in enumerate(FRONTIER_GROUPS):
+            ax_f, ax_e = axes[2 * i, j], axes[2 * i + 1, j]
+            for curve, (color, marker, ls, label) in FRONTIER_STYLE.items():
+                pts = []
+                for lv in sorted({r["level"] for r in rows[s] if r["curve"] == curve}):
+                    sel = [r for r in rows[s] if r["curve"] == curve and r["level"] == lv and pred(r["split"])]
+                    if sel:
+                        err = np.abs([r["err_mha"] for r in sel])
+                        pts.append((np.mean([r["cnot_count"] for r in sel]), np.mean(err <= CHEM_ACC),
+                                    max(float(np.nanmedian(err)), ERR_FLOOR)))
+                if not pts:
+                    continue
+                x, frac, med = np.array(pts).T
+                kw = dict(color=color, marker=marker, ls=ls, lw=2, ms=6, mec=SURFACE, mew=1.0, label=label)
+                ax_f.plot(x, 100 * frac, **kw)
+                ax_e.plot(x, med, **kw)
+            sft_dir = Path(results_dir).parent / "results_fresh" if gname == "test_fresh" else Path(results_dir)
+            sft = sft_dir / s / "sft_oneshot.jsonl"
+            if sft.exists():
+                t = [e for e in load_jsonl(sft, EvalRecord) if pred(e.split)]
+                if t:
+                    err = np.abs([e.error_mha for e in t])
+                    x = np.mean([e.cnot_count for e in t])
+                    st = style("sft_oneshot")
+                    for ax, y in ((ax_f, 100 * np.mean(err <= CHEM_ACC)), (ax_e, max(np.median(err), ERR_FLOOR))):
+                        ax.scatter(x, y, s=70, color=st["color"], marker=st["marker"], edgecolors=INK, linewidths=1.0,
+                                   zorder=4, label="SFT one-shot (fixed canonical sequence)")
+            n = len({r["geometry_id"] for r in rows[s] if pred(r["split"])})
+            ax_f.set_title(f"{SYSTEM_LABEL[s]} — {gname}, {n} geometries", loc="left")
+            ax_f.set_ylim(-3, 103)
+            ax_f.set_ylabel("% within 1.6 mHa")
+            ax_e.axhspan(ERR_FLOOR / 2, CHEM_ACC, color=BAND, lw=0, zorder=0)
+            ax_e.set_yscale("log")
+            ax_e.set_ylim(ERR_FLOOR / 2, None)
+            ax_e.set_ylabel("median |E − E$_{FCI}$| (mHa)")
+            ax_e.set_xlabel("mean compiled CX count (Qiskit CX basis)")
+    seen = {}
+    for ax in axes.flat:
+        for h, lab in zip(*ax.get_legend_handles_labels()):
+            seen.setdefault(lab, h)
+    leg = fig.legend(seen.values(), seen.keys(), loc="upper center", ncol=2, bbox_to_anchor=(0.5, 0.0),
+                     title="Each point = one budget level / prefix length (joined in level order), averaged over held-out "
+                           "geometries.\nADAPT needs a fresh ADAPT run per geometry; all other curves are one-shot "
+                           "(0 energy evaluations).", title_fontsize=7.5)
+    leg.get_title().set_color(INK2)
+    fig.suptitle("Accuracy vs two-qubit gate budget on held-out geometries", x=0.01, ha="left", fontsize=11, color=INK)
+    fig.tight_layout()
+    return _save(fig, out_dir, "fig7_budget_frontier")
+
+
 # ---------------------------------------------------------------------------- summary table
 
 def summary_markdown(data) -> str:
@@ -552,6 +631,8 @@ def make_all(results_dir, out_dir) -> dict[str, str]:
     (out_dir / "breakeven.json").write_text(json.dumps(be, indent=1))
     run("fig5_breakeven", fig_breakeven, be, out_dir)
     run("fig6_ionq", fig_ionq, results_dir, out_dir, why="no results/<system>/ionq_demo_*.json")
+    run("fig7_budget_frontier", fig_budget_frontier, results_dir, out_dir,
+        why="no results/<system>/*_frontier.jsonl")
     (out_dir / "summary.md").write_text(summary_markdown(data))
     report["summary"] = str(out_dir / "summary.md")
     return report
