@@ -33,8 +33,9 @@ def parse_args(argv=None):
     p.add_argument("--system", required=True)
     p.add_argument("--cond", default="hamiltonian", choices=["hamiltonian", "geometry"])
     p.add_argument("--no-gauge", action="store_true", help="disable orbital-phase gauge fixing")
-    p.add_argument("--targets", default="teacher_canonical", choices=["teacher", "teacher_canonical"],
-                   help="raw ADAPT circuits or canonicalised ones (scripts/make_canonical_teacher.py)")
+    p.add_argument("--targets", default="teacher_canonical",
+                   help="data/<system>/<targets>.jsonl: raw ADAPT 'teacher' or canonicalised labels "
+                        "from scripts/make_canonical_teacher.py")
     p.add_argument("--epochs", type=int, default=3000)
     p.add_argument("--batch-size", type=int, default=16)
     p.add_argument("--lr", type=float, default=1e-3)

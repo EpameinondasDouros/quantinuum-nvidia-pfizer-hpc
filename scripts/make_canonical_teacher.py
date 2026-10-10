@@ -13,7 +13,8 @@ with a complete, exactly re-optimised circuit that is chemically accurate AND va
      A. neighbour's canonical sequence, neighbour's angles
      B. own ADAPT operators (canonical order), neighbour's angles matched by (op, occurrence)
      C. own ADAPT operators (canonical order), own ADAPT angles permuted accordingly
-   Among candidates under --tol mHa, the fewest operators wins, ties in order A, B, C.
+   Among candidates under --tol mHa, the fewest operators wins, ties in order A, B, C
+   (--prefer neighbour: the first of A, B, C under --tol wins, giving larger contiguous regimes).
    If none qualifies, the raw ADAPT circuit is kept unchanged.
    Each BFGS minimises E(x) + mu |x - x_init|^2 (tiny mu): the energy has near-flat valleys in
    which plain BFGS drifts (e.g. sign flips of mixed-spin doubles), and the anchor keeps the
@@ -69,7 +70,7 @@ def anchored_minimize(ev, ops, init, mu):
     return res.x, ev.energy(ops, res.x)
 
 
-def relabel(rec, teacher, neighbour, rank, tol, mu, flip=None):
+def relabel(rec, teacher, neighbour, rank, tol, mu, flip=None, prefer="short"):
     ev = Evaluator(rec)
     perm = canonical_order(teacher.operators, rank)
     own_ops = [teacher.operators[i] for i in perm]
@@ -84,7 +85,7 @@ def relabel(rec, teacher, neighbour, rank, tol, mu, flip=None):
     for tag, ops, init in cands:
         x, e = anchored_minimize(ev, list(ops), init, mu)
         err = 1000 * (e - rec.fci_energy)
-        if err < tol and (best is None or len(ops) < len(best[1])):
+        if err < tol and (best is None or (prefer == "short" and len(ops) < len(best[1]))):
             best = (tag, list(ops), [wrap_angle(t) for t in x], e, err)
     if best is None:
         tag, ops, angles = "raw", teacher.operators, teacher.angles
@@ -103,6 +104,8 @@ def main(argv=None):
     p.add_argument("--system", required=True)
     p.add_argument("--tol", type=float, default=1.0, help="accept a relabel only below this error (mHa)")
     p.add_argument("--mu", type=float, default=1e-4, help="anchor strength (Ha/rad^2)")
+    p.add_argument("--prefer", default="short", choices=["short", "neighbour"])
+    p.add_argument("--out", default="teacher_canonical", help="output name under data/<system>/")
     a = p.parse_args(argv)
 
     recs = load_hamiltonians(a.system)
@@ -124,22 +127,22 @@ def main(argv=None):
     labels: dict[str, GeneratedCircuit] = {}
     todo = sorted(train, key=lambda r: tuple(P[r.geometry_id]))
     first = todo.pop(0)
-    labels[first.geometry_id] = relabel(first, teacher[first.geometry_id], None, rank, a.tol, a.mu)
+    labels[first.geometry_id] = relabel(first, teacher[first.geometry_id], None, rank, a.tol, a.mu, prefer=a.prefer)
     while todo:  # Prim: attach the unlabelled train geometry closest to the labelled set
         j, nb = min(
             ((j, g) for j, r in enumerate(todo) for g in labels),
             key=lambda jg: dist(todo[jg[0]].geometry_id, jg[1]),
         )
         r = todo.pop(j)
-        labels[r.geometry_id] = relabel(r, teacher[r.geometry_id], labels[nb], rank, a.tol, a.mu, S[r.geometry_id] * S[nb])
+        labels[r.geometry_id] = relabel(r, teacher[r.geometry_id], labels[nb], rank, a.tol, a.mu, S[r.geometry_id] * S[nb], a.prefer)
     train_ids = list(labels)
     for r in recs:
         if r.split != "train":
             nb = min(train_ids, key=lambda g: dist(r.geometry_id, g))
-            labels[r.geometry_id] = relabel(r, teacher[r.geometry_id], labels[nb], rank, a.tol, a.mu, S[r.geometry_id] * S[nb])
+            labels[r.geometry_id] = relabel(r, teacher[r.geometry_id], labels[nb], rank, a.tol, a.mu, S[r.geometry_id] * S[nb], a.prefer)
 
     out = [labels[r.geometry_id] for r in recs]
-    dump_jsonl(out, DATA_DIR / a.system / "teacher_canonical.jsonl")
+    dump_jsonl(out, DATA_DIR / a.system / f"{a.out}.jsonl")
     tags = defaultdict(int)
     for c in out:
         tags[c.meta["candidate"]] += 1

@@ -1,80 +1,57 @@
-"""Generate circuits with a trained policy and score them exactly (Workstream C).
+"""Generate circuits with a trained policy and score them with the shared harness (Workstream C).
 
-Modes (energy_evals counts only evaluations the METHOD needs; final scoring is free):
-  oneshot - greedy generation, 1 model generation, 0 energy evals (no VQE at inference)
-  refine  - oneshot, then BFGS over all angles starting from the generated angles
+Modes (cost counts only what the METHOD needs; final scoring is free, see genqai.evaluate):
+  oneshot - greedy generation: 1 model generation, 0 energy evals (no VQE at inference)
+  refine  - oneshot, then BFGS over all angles from the generated angles (counted by the harness)
   bestofk - greedy + (K-1) samples, each scored exactly (K energy evals), keep the lowest
 
     python scripts/generate.py --system lih4 --modes oneshot refine bestofk
-Writes results/<system>/gen_<mode><tag>.jsonl and results/<system>/gen_summary<tag>.json.
+Writes, for ALL geometries: results/<system>/gen_<mode><tag>.jsonl (GeneratedCircuit) and
+results/<system>/sft_<mode><tag>.jsonl (EvalRecord, method "sft_<mode>").
 """
 from __future__ import annotations
 
 import argparse
-import json
 import time
 from pathlib import Path
 
 import numpy as np
 import torch
 
-from genqai.adapt import wrap_angle
 from genqai.data import load_hamiltonians, load_teacher
+from genqai.evaluate import score_circuit, summarize
 from genqai.model import GQEPolicy
 from genqai.schema import GeneratedCircuit, dump_jsonl
 from genqai.sim import Evaluator
 
 ROOT = Path(__file__).resolve().parent.parent
-SPLITS = ["train", "val", "test_interp", "test_interval", "test_extrap"]
+SPLITS = ["train", "val", "test_interp", "test_interval", "test_extrap", "test"]
 
 
-def generate(policy: GQEPolicy, record, mode: str, k: int = 16, temperature: float = 1.0) -> GeneratedCircuit:
+def generate(policy: GQEPolicy, record, mode: str, k: int = 16, temperature: float = 1.0):
+    """-> (GeneratedCircuit, EvalRecord) for one Hamiltonian."""
     t0 = time.perf_counter()
     cond = policy.condition([record])
     ops, angles, logp, valid = policy.sample(cond, greedy=True)[0]
-    passes, evals = 1, 0
-    if mode == "refine":
-        ev = Evaluator(record)
-        x, _, _ = ev.optimize(ops, angles)
-        angles, evals = [wrap_angle(t) for t in x], ev.energy_evals
-    elif mode == "bestofk":
+    cost = {"model_forward_passes": 1}
+    if mode == "bestofk":
         ev = Evaluator(record)
         cands = [(ops, angles, logp, valid)] + policy.sample(cond, n=k - 1, temperature=temperature)
         energies = [ev.energy(o, a) if v else np.inf for o, a, _, v in cands]
         ops, angles, logp, valid = cands[int(np.argmin(energies))]
-        passes, evals = k, ev.energy_evals
-    elif mode != "oneshot":
+        cost = {"model_forward_passes": k, "energy_evals": k}
+    elif mode not in ("oneshot", "refine"):
         raise ValueError(mode)
-    runtime = time.perf_counter() - t0
-    energy = Evaluator(record).energy(ops, angles)  # scoring only, not charged to the method
-    return GeneratedCircuit(
-        geometry_id=record.geometry_id, system=record.system, operators=ops, angles=angles, valid=valid,
-        source=f"sft_{mode}",
-        meta={
-            "energy": energy, "error_mha": 1000 * (energy - record.fci_energy), "split": record.split,
-            "model_forward_passes": passes, "energy_evals": evals, "runtime_s": runtime, "logprob": logp,
-            **({"k": k, "temperature": temperature} if mode == "bestofk" else {}),
-        },
-    )
-
-
-def summarize(circuits, teacher) -> dict:
-    out = {}
-    for split in SPLITS + ["test"]:
-        cs = [c for c in circuits if c.meta["split"] == split or (split == "test" and c.meta["split"].startswith("test"))]
-        if not cs:
-            continue
-        e = np.abs([c.meta["error_mha"] for c in cs])
-        out[split] = {
-            "n": len(cs),
-            "median_abs_mha": float(np.median(e)), "max_abs_mha": float(e.max()),
-            **{f"pct_under_{t}": float(100 * np.mean(e < t)) for t in (1.6, 5, 10)},
-            "valid_rate": float(np.mean([c.valid for c in cs])),
-            "mean_ops": float(np.mean([len(c.operators) for c in cs])),
-            "teacher_exact_match": float(np.mean([c.operators == teacher[c.geometry_id].operators for c in cs])),
-            "mean_energy_evals": float(np.mean([c.meta["energy_evals"] for c in cs])),
-        }
-    return out
+    cost["runtime_s"] = time.perf_counter() - t0
+    method = f"sft_{mode}"
+    extra = {"logprob": logp, **({"k": k, "temperature": temperature} if mode == "bestofk" else {})}
+    circ = GeneratedCircuit(record.geometry_id, record.system, ops, angles, valid, source=method, meta=extra)
+    rec = score_circuit(record, circ, method, refine=mode == "refine", extra=extra, **cost)
+    if mode == "refine" and valid:
+        circ.angles = rec.extra["refined_angles"]
+    circ.meta.update(energy=rec.energy, error_mha=rec.error_mha, split=record.split,
+                     **{f: getattr(rec, f) for f in ("model_forward_passes", "energy_evals", "runtime_s")})
+    return circ, rec
 
 
 def main(argv=None):
@@ -92,21 +69,22 @@ def main(argv=None):
     teacher = load_teacher(a.system)
     records = load_hamiltonians(a.system)
     outdir = ROOT / "results" / a.system
-    summary_path = outdir / f"gen_summary{a.tag}.json"
-    summary = json.loads(summary_path.read_text()) if summary_path.exists() else {}
     for mode in a.modes:
         torch.manual_seed(a.seed)
-        circuits = [generate(policy, r, mode, a.k, a.temperature) for r in records]
+        circuits, evals = zip(*(generate(policy, r, mode, a.k, a.temperature) for r in records))
         dump_jsonl(circuits, outdir / f"gen_{mode}{a.tag}.jsonl")
-        summary[mode] = summarize(circuits, teacher)
+        dump_jsonl(evals, outdir / f"sft_{mode}{a.tag}.jsonl")
+        stats = summarize(list(evals))[f"sft_{mode}"]
         print(f"\n== {a.system} {mode}{a.tag}")
         print(f"{'split':14s} {'n':>3s} {'med|err|':>9s} {'max|err|':>9s} {'<1.6':>6s} {'<5':>6s} {'<10':>6s} "
               f"{'valid':>6s} {'#ops':>5s} {'match':>6s} {'evals':>7s}")
-        for split, s in summary[mode].items():
-            print(f"{split:14s} {s['n']:3d} {s['median_abs_mha']:9.3f} {s['max_abs_mha']:9.3f} "
-                  f"{s['pct_under_1.6']:6.1f} {s['pct_under_5']:6.1f} {s['pct_under_10']:6.1f} {s['valid_rate']:6.2f} "
-                  f"{s['mean_ops']:5.1f} {s['teacher_exact_match']:6.2f} {s['mean_energy_evals']:7.1f}")
-    summary_path.write_text(json.dumps(summary, indent=1))
+        for split in SPLITS:
+            s = stats[split]
+            ids = {e.geometry_id for e in evals if e.split == split or (split == "test" and e.split.startswith("test"))}
+            match = np.mean([c.operators == teacher[c.geometry_id].operators for c in circuits if c.geometry_id in ids])
+            print(f"{split:14s} {s['n']:3d} {s['median_abs_err_mha']:9.3f} {s['max_abs_err_mha']:9.3f} "
+                  f"{100 * s['frac_under_1.6mha']:6.1f} {100 * s['frac_under_5mha']:6.1f} {100 * s['frac_under_10mha']:6.1f} "
+                  f"{s['valid_frac']:6.2f} {s['mean_num_operators']:5.1f} {match:6.2f} {s['mean_energy_evals']:7.1f}")
 
 
 if __name__ == "__main__":
