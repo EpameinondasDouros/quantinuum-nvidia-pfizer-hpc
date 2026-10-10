@@ -9,6 +9,8 @@ Modes (cost counts only what the METHOD needs; final scoring is free, see genqai
 Writes, for ALL geometries: results/<system>/gen_<mode><tag>.jsonl (GeneratedCircuit) and
 results/<system>/sft_<mode><tag>.jsonl (EvalRecord, method "sft_<mode>").
 --fresh: the same for the untouched test_fresh geometries, into results_fresh/<system>/.
+With --family grpo (etc.) and --ckpt: gen_grpo_<mode><tag>.jsonl and grpo_<mode><tag>.jsonl
+(method "grpo_<mode>"). --cnot-budget conditions every generation on that CX budget.
 """
 from __future__ import annotations
 
@@ -30,10 +32,11 @@ SPLITS = ["train", "val", "test_interp", "test_interval", "test_extrap", "test"]
 FRESH_SPLITS = [FRESH_SPLIT]
 
 
-def generate(policy: GQEPolicy, record, mode: str, k: int = 16, temperature: float = 1.0):
+def generate(policy: GQEPolicy, record, mode: str, k: int = 16, temperature: float = 1.0, family: str = "sft",
+             cnot_budget: int | None = None):
     """-> (GeneratedCircuit, EvalRecord) for one Hamiltonian."""
     t0 = time.perf_counter()
-    cond = policy.condition([record])
+    cond = policy.condition([record], cnot_budget=cnot_budget)
     ops, angles, logp, valid = policy.sample(cond, greedy=True)[0]
     cost = {"model_forward_passes": 1}
     if mode == "bestofk":
@@ -45,8 +48,9 @@ def generate(policy: GQEPolicy, record, mode: str, k: int = 16, temperature: flo
     elif mode not in ("oneshot", "refine"):
         raise ValueError(mode)
     cost["runtime_s"] = time.perf_counter() - t0
-    method = f"sft_{mode}"
-    extra = {"logprob": logp, **({"k": k, "temperature": temperature} if mode == "bestofk" else {})}
+    method = f"{family}_{mode}"
+    extra = {"logprob": logp, **({"k": k, "temperature": temperature} if mode == "bestofk" else {}),
+             **({"cnot_budget": cnot_budget} if cnot_budget is not None else {})}
     circ = GeneratedCircuit(record.geometry_id, record.system, ops, angles, valid, source=method, meta=extra)
     rec = score_circuit(record, circ, method, refine=mode == "refine", extra=extra, **cost)
     if mode == "refine" and valid:
@@ -65,6 +69,8 @@ def main(argv=None):
     p.add_argument("--temperature", type=float, default=1.0)
     p.add_argument("--tag", default="")
     p.add_argument("--seed", type=int, default=0)
+    p.add_argument("--family", default="sft", help="method prefix: <family>_<mode>")
+    p.add_argument("--cnot-budget", type=int, default=None)
     p.add_argument("--fresh", action="store_true", help="score the test_fresh geometries (results_fresh/)")
     a = p.parse_args(argv)
 
@@ -74,10 +80,11 @@ def main(argv=None):
     outdir = results_dir(a.fresh) / a.system
     for mode in a.modes:
         torch.manual_seed(a.seed)
-        circuits, evals = zip(*(generate(policy, r, mode, a.k, a.temperature) for r in records))
-        dump_jsonl(circuits, outdir / f"gen_{mode}{a.tag}.jsonl")
-        dump_jsonl(evals, outdir / f"sft_{mode}{a.tag}.jsonl")
-        stats = summarize(list(evals))[f"sft_{mode}"]
+        circuits, evals = zip(*(generate(policy, r, mode, a.k, a.temperature, a.family, a.cnot_budget) for r in records))
+        gen_prefix = "gen_" if a.family == "sft" else f"gen_{a.family}_"
+        dump_jsonl(circuits, outdir / f"{gen_prefix}{mode}{a.tag}.jsonl")
+        dump_jsonl(evals, outdir / f"{a.family}_{mode}{a.tag}.jsonl")
+        stats = summarize(list(evals))[f"{a.family}_{mode}"]
         print(f"\n== {a.system} {mode}{a.tag}")
         print(f"{'split':14s} {'n':>3s} {'med|err|':>9s} {'max|err|':>9s} {'<1.6':>6s} {'<5':>6s} {'<10':>6s} "
               f"{'valid':>6s} {'#ops':>5s} {'match':>6s} {'evals':>7s}")

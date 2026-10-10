@@ -6,6 +6,12 @@ selection uses VAL one-shot accuracy: greedy generation -> exact energy -> mean 
 ties broken by VAL teacher-forced loss.
 
     python scripts/train_sft.py --system lih4
+
+Fine-tuning variants (Workstream D): --init starts from a checkpoint (its featurizer and architecture);
+--targets may be a .jsonl path (e.g. self-distillation labels from scripts/distill_targets.py);
+--budget-targets adds extra, always budget-conditioned examples (e.g. canonical prefixes with
+re-optimised angles from scripts/make_prefix_targets.py) and switches every budget vector to the
+CX-only form [1, 0, cnot/500] used for budget-conditioned generation.
 """
 from __future__ import annotations
 
@@ -20,9 +26,11 @@ import numpy as np
 import torch
 
 from genqai.circuits import build_circuit, gate_stats
-from genqai.data import load_hamiltonians, load_teacher, train_subset
+from genqai.data import DATA_DIR, load_hamiltonians, load_teacher, train_subset
 from genqai.features import budget_vector, fit_featurizer
-from genqai.model import Cond, build_policy
+from genqai.model import Cond, GQEPolicy, build_policy
+from genqai.rl import RewardConfig, RewardModel, budget_val_set, cnot_estimate, greedy_eval, record_train_time
+from genqai.schema import GeneratedCircuit, load_jsonl
 from genqai.sim import Evaluator
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -39,6 +47,9 @@ def parse_args(argv=None):
     p.add_argument("--train-subset", type=int, default=None,
                    help="train on N random TRAIN geometries only (genqai.data.train_subset; learning curve)")
     p.add_argument("--subset-seed", type=int, default=0)
+    p.add_argument("--init", default=None, help="fine-tune from this checkpoint instead of a fresh model")
+    p.add_argument("--budget-targets", default=None,
+                   help="data/<system>/<name>.jsonl of extra budget-conditioned targets (meta.cnot_count)")
     p.add_argument("--epochs", type=int, default=3000)
     p.add_argument("--batch-size", type=int, default=16)
     p.add_argument("--lr", type=float, default=1e-3)
@@ -84,28 +95,51 @@ def main(argv=None):
     rng = np.random.default_rng(a.seed)
     dev = torch.device(a.device)
 
-    teacher = load_teacher(a.system, a.targets)
+    if a.targets.endswith(".jsonl"):
+        teacher = {c.geometry_id: c for c in load_jsonl(a.targets, GeneratedCircuit)}
+    else:
+        teacher = load_teacher(a.system, a.targets)
     train = train_subset(load_hamiltonians(a.system, "train"), a.train_subset, a.subset_seed)
     val = load_hamiltonians(a.system, "val")
-    feat = fit_featurizer(a.system, a.cond, gauge=not a.no_gauge)
-    policy = build_policy(
-        a.system, feat, d_model=a.d_model, n_layers=a.layers, n_heads=a.heads, d_ff=a.ffn,
-        dropout=a.dropout, n_mix=a.n_mix, enc_blocks=a.enc_blocks,
-    ).to(dev)
+    if a.init:
+        policy = GQEPolicy.load(a.init).to(dev)
+        feat = policy.featurizer
+    else:
+        feat = fit_featurizer(a.system, a.cond, gauge=not a.no_gauge)
+        policy = build_policy(
+            a.system, feat, d_model=a.d_model, n_layers=a.layers, n_heads=a.heads, d_ff=a.ffn,
+            dropout=a.dropout, n_mix=a.n_mix, enc_blocks=a.enc_blocks,
+        ).to(dev)
 
-    X = torch.from_numpy(feat(train)).to(dev)
-    op_sign = torch.from_numpy(feat.op_signs(train)).to(dev)
+    # one example per train geometry (its target), plus optional extra budget-conditioned targets
+    ex = list(range(len(train)))
     ops = [teacher[r.geometry_id].operators for r in train]
     angles = [teacher[r.geometry_id].angles for r in train]
-    own_budget = torch.from_numpy(np.stack([
-        budget_vector(len(o), gate_stats(build_circuit(r, o, t))["cnot_count"])
-        for r, o, t in zip(train, ops, angles)
-    ])).to(dev)
+    budgets = [budget_vector(None if a.budget_targets else len(o), gate_stats(build_circuit(r, o, t))["cnot_count"])
+               for r, o, t in zip(train, ops, angles)]
+    force = [False] * len(train)
+    if a.budget_targets:
+        row = {r.geometry_id: i for i, r in enumerate(train)}
+        for c in load_jsonl(DATA_DIR / a.system / f"{a.budget_targets}.jsonl", GeneratedCircuit):
+            if c.geometry_id in row:
+                ex.append(row[c.geometry_id])
+                ops.append(c.operators)
+                angles.append(c.angles)
+                budgets.append(budget_vector(None, c.meta["cnot_count"]))
+                force.append(True)
+    X = torch.from_numpy(feat(train)).to(dev)[ex]
+    op_sign = torch.from_numpy(feat.op_signs(train)).to(dev)[ex]
+    own_budget = torch.from_numpy(np.stack(budgets)).to(dev)
+    force = torch.tensor(force, device=dev)
     val_cond = policy.condition(val)
+    if a.budget_targets:  # validated where it is used: VAL at several CX budgets, scored by the GRPO reward
+        cx_ref = {r.geometry_id: float(cnot_estimate(a.system, teacher[r.geometry_id].operators)) for r in val}
+        val_reward = RewardModel(val, RewardConfig(), cx_ref)
+        val_b_recs, val_budgets = budget_val_set(val, cx_ref)
     val_ops = [teacher[r.geometry_id].operators for r in val]
     val_angles = [teacher[r.geometry_id].angles for r in val]
 
-    N = len(train)
+    N = len(ex)
     steps_per_epoch = math.ceil(N / a.batch_size)
     total = a.epochs * steps_per_epoch
     warm = max(1, int(a.warmup * total))
@@ -114,7 +148,7 @@ def main(argv=None):
         opt, lambda s: (s + 1) / warm if s < warm else 0.5 * (1 + math.cos(math.pi * (s - warm) / max(1, total - warm)))
     )
 
-    log = {"args": vars(a), "n_train": N, "n_val": len(val), "evals": []}
+    log = {"args": vars(a), "n_train": len(train), "n_examples": N, "n_val": len(val), "evals": []}
     best, best_key, bad, t0 = None, None, 0, time.perf_counter()
     for epoch in range(1, a.epochs + 1):
         policy.train()
@@ -125,7 +159,7 @@ def main(argv=None):
             x = X[idx]
             if a.coef_noise > 0:
                 x = x + a.coef_noise * torch.randn_like(x)
-            use = torch.from_numpy(rng.random(len(idx)) < a.budget_prob).to(dev)[:, None]
+            use = (torch.from_numpy(rng.random(len(idx)) < a.budget_prob).to(dev) | force[idx])[:, None]
             budget = torch.where(use, own_budget[idx], torch.zeros_like(own_budget[idx]))
             cond = Cond(x, budget, op_sign[idx])
             loss, ce, ang = nll(policy, cond, [ops[j] for j in idx], [angles[j] for j in idx], a.lambda_theta)
@@ -149,14 +183,20 @@ def main(argv=None):
             "val_max_abs_mha": float(ab.max()), "val_valid": float(np.mean(valid)),
             "elapsed_s": time.perf_counter() - t0,
         }
+        if a.budget_targets:
+            v = greedy_eval(policy, val_reward, val_b_recs, val_budgets)
+            rec.update({f"val_budget_{k}": x for k, x in v.items() if k != "circuits"})
         log["evals"].append(rec)
         print(
             f"ep {epoch:5d} loss {rec['train'][0]:8.3f} ce {rec['train'][1]:.4f} | val loss {vl:8.3f} ce {vce:.3f} "
             f"| val |err| mean {rec['val_mean_abs_mha']:.3f} med {rec['val_median_abs_mha']:.3f} "
-            f"max {rec['val_max_abs_mha']:.3f} mHa valid {rec['val_valid']:.2f} ({rec['elapsed_s']:.0f}s)",
+            f"max {rec['val_max_abs_mha']:.3f} mHa valid {rec['val_valid']:.2f} ({rec['elapsed_s']:.0f}s)"
+            + (f" | budgeted VAL score {rec['val_budget_score']:+.4f} |err| {rec['val_budget_mean_abs_mha']:.3f} "
+               f"cx {rec['val_budget_mean_cx']:.0f} in-budget {rec['val_budget_within_budget']:.2f}"
+               if a.budget_targets else ""),
             flush=True,
         )
-        key = (round(rec["val_mean_abs_mha"], 3), vl)
+        key = (-rec["val_budget_score"],) if a.budget_targets else (round(rec["val_mean_abs_mha"], 3), vl)
         if best_key is None or key < best_key:
             best_key, best, bad = key, copy.deepcopy(policy.state_dict()), 0
             log["best"] = rec
@@ -167,7 +207,7 @@ def main(argv=None):
                 break
 
     policy.load_state_dict(best)
-    log["train_time_s"] = time.perf_counter() - t0
+    record_train_time(log, time.perf_counter() - t0, ROOT / "results", a.system, a.init)
     out = Path(a.out) if a.out else ROOT / "checkpoints" / a.system / "sft.pt"
     out.parent.mkdir(parents=True, exist_ok=True)
     policy.to("cpu").save(out, args=vars(a), best=log["best"])
