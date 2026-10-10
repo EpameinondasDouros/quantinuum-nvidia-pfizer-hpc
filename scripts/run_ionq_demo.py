@@ -13,7 +13,7 @@ from pathlib import Path
 
 from genqai.circuits import build_circuit, gate_stats
 from genqai.data import DATA_DIR, load_hamiltonians
-from genqai.measure import MeasurementPlan, compile_state, ionq_available, ionq_native_stats, measure_energy
+from genqai.measure import MeasurementPlan, compile_state, ionq_native_stats, run_backends, runs_table
 from genqai.schema import GeneratedCircuit, load_jsonl
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -29,45 +29,26 @@ ap.add_argument("--shots", type=int, default=20_000, help="total shots over all 
 ap.add_argument("--allocation", default="uniform", choices=["uniform", "weighted"])
 ap.add_argument("--ionq-noise-models", nargs="+", default=["aria-1"])
 ap.add_argument("--seed", type=int, default=0)
+ap.add_argument("--tag", default="", help="output suffix: results/<system>/ionq_demo_<id><tag>.json")
 args = ap.parse_args()
 
 rec = load_hamiltonians(args.system, "test")[args.geometry_index]
 src = Path(args.circuits) if args.circuits else DATA_DIR / args.system / "teacher.jsonl"
 circ = {c.geometry_id: c for c in load_jsonl(src, GeneratedCircuit)}[rec.geometry_id]
-backends = args.backend or ["exact", "exact_probs", "local_shots", "local_noisy"] + (
-    ["ionq_ideal", "ionq_noisy"] if ionq_available() else [])
-
 plan = MeasurementPlan.from_record(rec)
 qc = build_circuit(rec, circ.operators, circ.angles)
 gates = gate_stats(qc)
 native = {d: ionq_native_stats(compile_state(qc), d) for d in ("aria-1", "forte-1")}
 
-runs = []
-for b in backends:
-    for nm in args.ionq_noise_models if b == "ionq_noisy" else [None]:
-        alloc = "uniform" if b.startswith("ionq") else args.allocation
-        try:
-            e = measure_energy(rec, circ.operators, circ.angles, b, shots=args.shots, allocation=alloc,
-                               seed=args.seed, noise_model=nm or "ideal", plan=plan)
-        except Exception as exc:  # report and continue: one failing backend must not lose the others
-            print(f"[{b}{'/' + nm if nm else ''}] failed: {type(exc).__name__}: {exc}")
-            continue
-        e.meta["label"] = f"{b}/{nm}" if nm else b
-        runs.append(e)
-
+runs = run_backends(rec, circ.operators, circ.angles, args.backend, shots=args.shots, allocation=args.allocation,
+                   ionq_noise_models=args.ionq_noise_models, seed=args.seed, plan=plan)
 print(f"\n{args.system} {rec.geometry_id} {rec.geometry_params} split={rec.split} source={circ.source} "
       f"ops={len(circ.operators)} groups={plan.num_groups}")
 print(f"FCI {rec.fci_energy:.6f} Ha | CX (Qiskit basis) {gates['cnot_count']} | native 2q (qiskit-ionq local): "
       + ", ".join(f"{d} {v['native_2q_count']} {v['native_2q_gate'].upper()}" for d, v in native.items()))
-print(f"{'backend':<20}{'energy (Ha)':>14}{'stderr':>11}{'err mHa':>10}{'groups':>8}{'shots':>9}")
-for e in runs:
-    print(f"{e.meta['label']:<20}{e.energy:>14.6f}{e.stderr:>11.6f}{1000 * (e.energy - rec.fci_energy):>10.3f}"
-          f"{e.num_groups:>8}{e.total_shots:>9}" + (f"  job={e.meta['ionq_job_id']}" if "ionq_job_id" in e.meta else "")
-          + (f"  (1e-3 prob rounding: |bias| <= {1000 * e.meta['probability_rounding_bound_ha']:.1f} mHa)"
-             if "probability_rounding_bound_ha" in e.meta else ""))
-print("local_noisy = GenQAI depolarizing approximation (NOT IonQ's model); ionq_noisy = IonQ's simulator noise model")
+print(runs_table(rec, runs))
 
-out = ROOT / "results" / args.system / f"ionq_demo_{rec.geometry_id}.json"
+out = ROOT / "results" / args.system / f"ionq_demo_{rec.geometry_id}{args.tag}.json"
 out.parent.mkdir(parents=True, exist_ok=True)
 out.write_text(json.dumps({
     "geometry_id": rec.geometry_id, "system": args.system, "geometry_params": rec.geometry_params,
