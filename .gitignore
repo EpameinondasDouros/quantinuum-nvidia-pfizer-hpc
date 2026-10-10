@@ -3,7 +3,7 @@ __pycache__/
 *.pyc
 .pytest_cache/
 *.egg-info/
-runs/tmp/
+runs/
 .DS_Store
 .env
 .claude/

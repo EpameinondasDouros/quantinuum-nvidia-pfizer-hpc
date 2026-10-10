@@ -33,7 +33,7 @@ from functools import cached_property
 import numpy as np
 
 from genqai.adapt import run_adapt
-from genqai.data import FRESH_SPLIT, load_hamiltonians, load_teacher
+from genqai.data import FRESH_SPLIT, load_hamiltonians, load_teacher, train_subset
 from genqai.evaluate import score_circuit
 from genqai.features import Featurizer, fit_featurizer
 from genqai.pool import get_pool
@@ -68,12 +68,15 @@ class TrainSet:
         return AngleInterpolator(self.featurizer).fit(self.records, self.canon_bank)
 
 
-def load_train_set(system: str) -> TrainSet:
-    train = load_hamiltonians(system, "train")
+def load_train_set(system: str, n: int | None = None, subset_seed: int = 0, canon: str = "teacher_canonical",
+                   featurizer: Featurizer | None = None) -> TrainSet:
+    """Default: all TRAIN geometries. Learning curve / ablations: n random TRAIN geometries
+    (genqai.data.train_subset), another label file as the canonical bank, another featurizer."""
+    train = train_subset(load_hamiltonians(system, "train"), n, subset_seed)
     ids = [r.geometry_id for r in train]
-    teacher, canon = load_teacher(system), load_teacher(system, "teacher_canonical")
-    return TrainSet(train, {g: teacher[g] for g in ids}, {g: canon[g] for g in ids}, fit_featurizer(system),
-                    load_hamiltonians(system, "val"))
+    teacher, cbank = load_teacher(system), load_teacher(system, canon)
+    return TrainSet(train, {g: teacher[g] for g in ids}, {g: cbank[g] for g in ids},
+                    featurizer or fit_featurizer(system), load_hamiltonians(system, "val"))
 
 
 def nearest_train(record: HamiltonianRecord, train_records: list[HamiltonianRecord]) -> HamiltonianRecord:

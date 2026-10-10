@@ -128,7 +128,19 @@ def load_hamiltonians(system: str, split: str | None = None) -> list[Hamiltonian
     return [r for r in recs if r.split == split or (split == "test" and r.split.startswith("test"))]
 
 
+def train_subset(records: list[HamiltonianRecord], n: int | None, seed: int = 0) -> list[HamiltonianRecord]:
+    """n TRAIN records drawn uniformly without replacement (grid order kept). For a fixed seed the
+    subsets are nested in n (prefixes of one permutation). n None or >= len(records): all of them."""
+    if any(r.split != "train" for r in records):
+        raise ValueError("train_subset draws from training-split geometries only")
+    if n is None or n >= len(records):
+        return list(records)
+    keep = np.random.default_rng(seed).permutation(len(records))[:n]
+    return [records[i] for i in sorted(keep)]
+
+
 def load_teacher(system: str, variant: str = "teacher") -> dict[str, GeneratedCircuit]:
     """Teacher circuits keyed by geometry_id: "teacher" (raw ADAPT), "teacher_canonical", or
-    "teacher_fresh" (fresh ADAPT on the test_fresh geometries; for scoring ADAPT only, never training)."""
+    "teacher_fresh" (fresh ADAPT on the test_fresh geometries; for scoring ADAPT only, never training).
+    An absolute variant path (without .jsonl) reads labels stored outside data/, e.g. under runs/."""
     return {c.geometry_id: c for c in load_jsonl(DATA_DIR / system / f"{variant}.jsonl", GeneratedCircuit)}

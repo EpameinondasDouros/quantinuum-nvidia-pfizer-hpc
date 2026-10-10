@@ -22,7 +22,9 @@ with a complete, exactly re-optimised circuit that is chemically accurate AND va
    Neighbour angles are first mapped through the orbital-phase gauge (genqai.features), since
    PySCF MO signs can flip between neighbouring geometries.
 Non-train geometries get the same treatment warm-started from their nearest TRAIN label (used
-only for val loss and diagnostics; training never sees them).
+only for val loss and diagnostics; training never sees them). --train-subset N relabels with only N
+random TRAIN geometries (genqai.data.train_subset) counted as TRAIN (learning curve). Each label's
+meta records relabel_energy_evals, the energy(+gradient) evaluations its re-optimisation spent.
 
     python scripts/make_canonical_teacher.py --system h4
 """
@@ -35,7 +37,7 @@ import numpy as np
 from scipy.optimize import minimize
 
 from genqai.adapt import wrap_angle
-from genqai.data import DATA_DIR, load_hamiltonians, load_teacher
+from genqai.data import DATA_DIR, load_hamiltonians, load_teacher, train_subset
 from genqai.features import fit_featurizer
 from genqai.schema import GeneratedCircuit, dump_jsonl
 from genqai.sim import Evaluator
@@ -96,7 +98,8 @@ def relabel(rec, teacher, neighbour, rank, tol, mu, flip=None, prefer="short"):
     return GeneratedCircuit(
         geometry_id=rec.geometry_id, system=rec.system, operators=ops, angles=angles, valid=True,
         source="adapt_canonical",
-        meta={"energy": e, "error_mha": err, "candidate": tag, "teacher_ops": teacher.operators},
+        meta={"energy": e, "error_mha": err, "candidate": tag, "teacher_ops": teacher.operators,
+              "relabel_energy_evals": ev.energy_evals},
     )
 
 
@@ -129,7 +132,9 @@ def smooth(labels, train, S, dist, sweeps, mu, tol):
             if t is None:
                 continue
             lab, rec = labels[g], train[g]
-            x, e = anchored_minimize(Evaluator(rec), lab.operators, lab.angles, mu, anchor=t)
+            ev = Evaluator(rec)
+            x, e = anchored_minimize(ev, lab.operators, lab.angles, mu, anchor=t)
+            lab.meta["relabel_energy_evals"] += ev.energy_evals
             err = 1000 * (e - rec.fci_energy)
             if err < tol:
                 lab.angles = [wrap_angle(v) for v in x]
@@ -146,12 +151,15 @@ def main(argv=None):
     p.add_argument("--start", default="max", choices=["min", "max"], help="continuation root: smallest or largest geometry")
     p.add_argument("--smooth-sweeps", type=int, default=10, help="Laplacian smoothing sweeps over TRAIN labels")
     p.add_argument("--smooth-mu", type=float, default=3e-3, help="smoothing pull strength (Ha/rad^2)")
-    p.add_argument("--out", default="teacher_canonical", help="output name under data/<system>/")
+    p.add_argument("--train-subset", type=int, default=None, help="use only N random TRAIN geometries")
+    p.add_argument("--subset-seed", type=int, default=0)
+    p.add_argument("--out", default="teacher_canonical",
+                   help="output name under data/<system>/ (or an absolute path without .jsonl)")
     a = p.parse_args(argv)
 
     recs = load_hamiltonians(a.system)
     teacher = load_teacher(a.system)
-    train = [r for r in recs if r.split == "train"]
+    train = train_subset([r for r in recs if r.split == "train"], a.train_subset, a.subset_seed)
     pos = defaultdict(list)
     for r in train:
         for i, (o, occ) in enumerate(occurrence_keys(teacher[r.geometry_id].operators)):
@@ -179,7 +187,7 @@ def main(argv=None):
     train_ids = list(labels)
     smooth(labels, {r.geometry_id: r for r in train}, S, dist, a.smooth_sweeps, a.smooth_mu, a.tol)
     for r in recs:
-        if r.split != "train":
+        if r.geometry_id not in train_ids:
             nb = min(train_ids, key=lambda g: dist(r.geometry_id, g))
             labels[r.geometry_id] = relabel(r, teacher[r.geometry_id], labels[nb], rank, a.tol, a.mu, S[r.geometry_id] * S[nb], a.prefer)
 
