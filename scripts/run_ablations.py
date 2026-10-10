@@ -77,11 +77,15 @@ def run_jobs(jobs: list[tuple[Path, list[str]]], n_parallel: int) -> None:
 
 
 def stats(evals) -> dict[str, dict]:
-    """{split: metrics} for EvalRecords of one method on EVAL_SPLITS."""
-    s = summarize(evals)[evals[0].method]
+    """{split: metrics} for EvalRecords of one method on EVAL_SPLITS. Each split is summarised on its
+    own: summarize's pseudo-split "test" (any test_*) would otherwise also swallow test_fresh."""
     keys = ("n", "valid_frac", "median_abs_err_mha", "mean_abs_err_mha", "max_abs_err_mha", "frac_under_1.6mha",
             "mean_cnot_count", "mean_num_operators")
-    return {sp: {k: s[sp][k] for k in keys} for sp in EVAL_SPLITS}
+    out = {}
+    for sp in EVAL_SPLITS:
+        s = summarize([e for e in evals if (e.split == FRESH_SPLIT) == (sp == FRESH_SPLIT)])[evals[0].method][sp]
+        out[sp] = {k: s[k] for k in keys}
+    return out
 
 
 def eval_records(system: str):
