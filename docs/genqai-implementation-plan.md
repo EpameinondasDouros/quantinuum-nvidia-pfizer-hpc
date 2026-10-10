@@ -40,19 +40,19 @@ Branches: one per task or lane, named `feat/<short-name>`. Only merge to main af
 
 | ID | Task | Owner | Status | Where | Notes |
 | --- | --- | --- | --- | --- | --- |
-| D1 | GRPO on SFT policy, energy reward, KL to SFT, replay cache, separately evaluated checkpoint | Udaya (agent) | 🟨 | `feat/rl` | Starts after C1 |
-| D2 | Self-distillation round(s): SFT → SFT+GRPO → SFT+GRPO+distill, all scored on the frozen test set | Udaya (agent) | 🟨 | `feat/rl` | After D1 |
-| D3 | Budget-conditioned GRPO; energy-vs-CNOT frontier from one model vs ADAPT per budget | Udaya (agent) | 🟨 | `feat/rl` | The differentiator |
+| D1 | GRPO on SFT policy, energy reward, KL to SFT, replay cache, separately evaluated checkpoint | Udaya (agent) | ✅ | main `genqai/rl.py`, `scripts/train_grpo.py` | **Negative result:** energy-only GRPO does not improve held-out error on any system (h4 test_fresh 65% < 1.6 mHa, same as SFT). SFT stays the shipped model |
+| D2 | Self-distillation round(s): SFT → SFT+GRPO → SFT+GRPO+distill, all scored on the frozen test set | Udaya (agent) | ✅ | main `scripts/distill_targets.py` | **Negative result:** replay improved 10/35 h4 train labels, but distillation made held-out error worse (h4 grid max 113 mHa) |
+| D3 | Budget-conditioned GRPO; energy-vs-CNOT frontier from one model vs ADAPT per budget | Udaya (agent) | ✅ | main `figures/fig7_budget_frontier.png`, `scripts/budget_frontier.py` | GRPO is what makes budget conditioning work (budget-SFT ignored small budgets and blew up at large ones; after GRPO, CX tracks the budget). But at matched CX, KRR on a fixed prefix beats it (h4 ~736 CX: 95%/80% vs 82%/55% < 1.6 mHa). Cheapest honest hardware win: 14-op prefix + KRR, about 20% fewer CX than SFT at 95% (grid) / 80% (fresh) |
 | D4 | Break-even analysis (wall-clock and quantum-resource accounting), vs fresh and warm ADAPT; Figure 5 | open | ⬜ | | Needs B2 costs + C1 |
-| D5 | Figure 4: training evolution (held-out error and CNOTs per checkpoint for SFT / GRPO / distill) | Udaya (agent) | 🔀 | main `figures/fig4_training.png` | SFT curve exists; GRPO / distill lines appear when D1/D2 write logs |
-| D6 | Ablations: Hamiltonian vs geometry-only conditioning; NN vs transformer; energy-only vs resource-aware reward | Udaya (agent) | 🟨 | `feat/ablations` | On test_fresh: Hamiltonian vs geometry conditioning, gauge on/off, canonical vs raw labels, transformer vs regression vs NN |
+| D5 | Figure 4: training evolution (held-out error and CNOTs per checkpoint for SFT / GRPO / distill) | Udaya (agent) | ✅ | main `figures/fig4_training.png` | SFT / GRPO / distill curves |
+| D6 | Ablations: Hamiltonian vs geometry-only conditioning; NN vs transformer; energy-only vs resource-aware reward | Udaya (agent) | ✅ | main `results/ablations.md` | On h4 test_fresh: canonical labels and Hamiltonian conditioning carry the accuracy; gauge fixing matters (KRR 100% → 80% without it); the transformer adds no accuracy over KRR |
 | D7 | IonQ native 2-qubit gate counts (MS/ZZ) for generated vs ADAPT circuits | open | ⬜ | | Never relabel CX as native |
 
 ### P3 — upside if time remains
 
 | ID | Task | Owner | Status | Where | Notes |
 | --- | --- | --- | --- | --- | --- |
-| X1 | Figure 7: learning curve (held-out error vs 10 / 20 / all training geometries) | Udaya (agent) | 🟨 | `feat/ablations` | Train-set size 5/10/20/all × 3 seeds, transformer vs regression vs NN, x-axis also in teacher quantum evals |
+| X1 | Figure 7: learning curve (held-out error vs 10 / 20 / all training geometries) | Udaya (agent) | ✅ | main `figures/fig8_learning_curve.png` | KRR beats the transformer at every N; h4 KRR reaches 95% < 1.6 mHa with 20 train geometries, while the transformer gets 65% with all 35 |
 | X2 | Several teacher runs per geometry (seeds / perturbed init) as extra labels | open | ⬜ | | Same split, not new independent examples |
 | X3 | Qubit-excitation or CEO pool as a controlled comparison teacher | open | ⬜ | | Never mixed into the primary teacher |
 | X4 | H₄ or LiH-6q on IonQ noisy simulator | open | ⬜ | | Check group count and shot budget first |
