@@ -272,8 +272,48 @@ def submit_ionq(circuits: list[QuantumCircuit], shots: int, noise_model: str = "
 
 def collect_ionq(result, num_circuits: int, exact: bool) -> list[dict]:
     """Per-circuit distributions from an IonQ result: probabilities if exact, else counts."""
-    get = result.get_probabilities if exact else result.get_counts
-    return [dict(get(i)) for i in range(num_circuits)]
+    if not exact:
+        return result_counts(result, num_circuits)
+    return [dict(result.get_probabilities(i)) for i in range(num_circuits)]
+
+
+def result_counts(result, num_circuits: int) -> list[dict]:
+    """Per-circuit counts of a multi-circuit job, whatever the provider.
+
+    Qiskit BasicSimulator / Aer / qiskit-ionq answer result.get_counts(i); some providers only
+    return a list from result.get_counts() (or a single dict for a one-circuit job).
+    """
+    try:
+        return [dict(result.get_counts(i)) for i in range(num_circuits)]
+    except Exception as first:
+        allc = result.get_counts()
+        allc = allc if isinstance(allc, list) else [allc]
+        if len(allc) != num_circuits:
+            raise ValueError(f"result has {len(allc)} count dicts for {num_circuits} circuits "
+                             f"(get_counts(i) failed: {type(first).__name__}: {first})") from first
+        return [dict(c) for c in allc]
+
+
+def measure_on_backend(record: HamiltonianRecord, ops, angles, backend, shots_per_group: int,
+                       plan: MeasurementPlan | None = None) -> EnergyEstimate:
+    """Measured energy on a ready-made Qiskit backend object (e.g. the one Qollab injects).
+
+    Every QWC group goes into ONE backend.run(list, shots=...) call -- IonQ backends allow one
+    job per Qollab run. The backend's own options (noise model, ...) are left untouched.
+    """
+    plan = plan or MeasurementPlan.from_record(record)
+    circuits = plan.circuits(compile_state(build_circuit(record, ops, angles)))
+    tqc = transpile(circuits, backend=backend, optimization_level=1, seed_transpiler=0)
+    job = backend.run(tqc, shots=shots_per_group)
+    est = plan.estimate(result_counts(job.result(), len(circuits)))
+    name = getattr(backend, "name", type(backend).__name__)
+    est.backend = str(name() if callable(name) else name)  # BackendV1: method, BackendV2: property
+    try:
+        est.meta["job_id"] = job.job_id()
+    except Exception:
+        pass
+    est.meta["label"] = est.backend
+    return est
 
 
 def ionq_native_stats(qc: QuantumCircuit, device: str = "aria-1") -> dict:

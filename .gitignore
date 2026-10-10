@@ -7,3 +7,4 @@ runs/tmp/
 .DS_Store
 .env
 .claude/
+qollab/*.png

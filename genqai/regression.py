@@ -21,7 +21,6 @@ from collections import Counter
 
 import numpy as np
 from scipy.interpolate import interp1d
-from sklearn.kernel_ridge import KernelRidge
 
 from genqai.adapt import wrap_angle
 from genqai.features import Featurizer
@@ -61,6 +60,8 @@ class AngleRegressor:
         self.featurizer = featurizer
 
     def _fit_config(self, alpha: float, gamma: float):
+        from sklearn.kernel_ridge import KernelRidge  # lazy: optional in the Qollab (Pyodide) bundle
+
         models = {}
         for seq, idx in self.seq_index.items():
             Y = np.stack([self.Y[i] for i in idx])

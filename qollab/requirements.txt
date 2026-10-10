@@ -1,0 +1,5 @@
+# Qollab: also enable the "Qiskit Nature (+ PySCF)" library (live Hamiltonians for any geometry).
+# qiskit, numpy, scipy, matplotlib are provided by the runtime / Pyodide.
+qiskit-nature==0.8.0
+pyscf>=2.14.0,<3
+scikit-learn
