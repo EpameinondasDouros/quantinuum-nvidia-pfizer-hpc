@@ -17,9 +17,9 @@ from pathlib import Path
 import numpy as np
 
 from genqai.adapt import run_adapt
-from genqai.baselines import run_method
+from genqai.baselines import load_train_set, run_method
 from genqai.chemistry import SYSTEMS, build_record, geometry_id
-from genqai.data import load_hamiltonians, load_teacher
+from genqai.data import load_hamiltonians
 from genqai.evaluate import score_circuit
 from genqai.schema import EvalRecord, GeneratedCircuit, HamiltonianRecord, load_jsonl
 
@@ -124,21 +124,20 @@ def compare(record: HamiltonianRecord, gens: dict[str, tuple[GeneratedCircuit, d
             live_adapt: bool = True) -> list[EvalRecord]:
     """Score generators and baselines on one geometry with the shared harness (exact statevector).
 
-    Baselines: HF, CCSD, FCI (from the record), nearest-neighbour reuse/refine (TRAINING teacher
-    labels only, genqai.baselines), and optionally a fresh ADAPT-VQE run with the teacher's settings.
+    Baselines: HF, CCSD, FCI (from the record); sign-corrected nearest-neighbour reuse/refine and
+    kernel-ridge angle regression, which read TRAINING labels only (genqai.baselines); and optionally
+    a fresh ADAPT-VQE run with the teacher's settings.
     """
-    evals = [run_method(m, record, [], {}) for m in ("hf", "ccsd", "fci")]
+    train = load_train_set(record.system)
+    evals = [run_method(m, record, train) for m in ("hf", "ccsd", "fci")]
     for circ, info in gens.values():
         evals.append(score_circuit(record, circ, circ.source, model_forward_passes=1, runtime_s=info["runtime_s"]))
-    train = load_hamiltonians(record.system, "train")
-    teacher = load_teacher(record.system)
-    bank = {r.geometry_id: teacher[r.geometry_id] for r in train}
-    for m in ("nn_reuse", "nn_refine"):
-        evals.append(run_method(m, record, train, bank))
+    for m in ("nn_reuse_gauge", "angle_regression", "nn_refine_canon"):
+        evals.append(run_method(m, record, train))
     if live_adapt:
-        settings = next(iter(bank.values())).meta
+        settings = next(iter(train.bank.values())).meta
         own = run_adapt(record, max_ops=settings["max_ops"], grad_tol=settings["grad_tol"])
-        evals.append(run_method("adapt", record, train, bank, own_teacher=own))
+        evals.append(run_method("adapt", record, train, own_teacher=own))
     return evals
 
 
