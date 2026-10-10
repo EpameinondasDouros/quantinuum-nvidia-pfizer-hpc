@@ -361,3 +361,56 @@ def measure_energy(
     est.backend = backend
     est.meta = meta
     return est
+
+
+def default_backends() -> list[str]:
+    """Local backends always; IonQ simulator backends only when an API key is present."""
+    return ["exact", "exact_probs", "local_shots", "local_noisy"] + (
+        ["ionq_ideal", "ionq_noisy"] if ionq_available() else [])
+
+
+def run_backends(
+    record: HamiltonianRecord,
+    ops,
+    angles,
+    backends=None,
+    shots: int = 10_000,
+    allocation: str = "uniform",
+    ionq_noise_models=("aria-1",),
+    seed: int | None = 0,
+    plan: MeasurementPlan | None = None,
+) -> list[EnergyEstimate]:
+    """measure_energy on every backend (ionq_noisy once per IonQ noise model).
+
+    Each estimate gets meta["label"] ("ionq_noisy/aria-1", ...). A failing backend is reported and
+    skipped so it never loses the others' results. IonQ backends always use uniform allocation.
+    """
+    plan = plan or MeasurementPlan.from_record(record)
+    runs = []
+    for b in backends or default_backends():
+        for nm in ionq_noise_models if b == "ionq_noisy" else [None]:
+            label = f"{b}/{nm}" if nm else b
+            try:
+                e = measure_energy(record, ops, angles, b, shots=shots,
+                                   allocation="uniform" if b.startswith("ionq") else allocation,
+                                   seed=seed, noise_model=nm or "ideal", plan=plan)
+            except Exception as exc:
+                print(f"[{label}] failed: {type(exc).__name__}: {exc}")
+                continue
+            e.meta["label"] = label
+            runs.append(e)
+    return runs
+
+
+def runs_table(record: HamiltonianRecord, runs: list[EnergyEstimate]) -> str:
+    """Plain-text table of measured energies vs FCI (IonQ job IDs included)."""
+    lines = [f"{'backend':<20}{'energy (Ha)':>14}{'stderr':>11}{'err mHa':>10}{'groups':>8}{'shots':>9}"]
+    for e in runs:
+        lines.append(
+            f"{e.meta['label']:<20}{e.energy:>14.6f}{e.stderr:>11.6f}{1000 * (e.energy - record.fci_energy):>10.3f}"
+            f"{e.num_groups:>8}{e.total_shots:>9}" + (f"  job={e.meta['ionq_job_id']}" if "ionq_job_id" in e.meta else "")
+            + (f"  (1e-3 prob rounding: |bias| <= {1000 * e.meta['probability_rounding_bound_ha']:.1f} mHa)"
+               if "probability_rounding_bound_ha" in e.meta else ""))
+    lines.append("local_noisy = GenQAI depolarizing approximation (NOT IonQ's model); "
+                 "ionq_noisy = IonQ's simulator noise model")
+    return "\n".join(lines)

@@ -7,9 +7,10 @@ Modes (cost counts only what the METHOD needs; final scoring is free, see genqai
 
     python scripts/generate.py --system lih4 --modes oneshot refine bestofk
 Writes, for ALL geometries: results/<system>/gen_<mode><tag>.jsonl (GeneratedCircuit) and
-results/<system>/sft_<mode><tag>.jsonl (EvalRecord, method "sft_<mode>"). With --family grpo (etc.)
-and --ckpt: gen_grpo_<mode><tag>.jsonl and grpo_<mode><tag>.jsonl (method "grpo_<mode>").
---cnot-budget conditions every generation on that CX budget (budget-conditioned models).
+results/<system>/sft_<mode><tag>.jsonl (EvalRecord, method "sft_<mode>").
+--fresh: the same for the untouched test_fresh geometries, into results_fresh/<system>/.
+With --family grpo (etc.) and --ckpt: gen_grpo_<mode><tag>.jsonl and grpo_<mode><tag>.jsonl
+(method "grpo_<mode>"). --cnot-budget conditions every generation on that CX budget.
 """
 from __future__ import annotations
 
@@ -20,7 +21,7 @@ from pathlib import Path
 import numpy as np
 import torch
 
-from genqai.data import load_hamiltonians, load_teacher
+from genqai.data import FRESH_SPLIT, load_hamiltonians, load_teacher, results_dir
 from genqai.evaluate import score_circuit, summarize
 from genqai.model import GQEPolicy
 from genqai.schema import GeneratedCircuit, dump_jsonl
@@ -28,6 +29,7 @@ from genqai.sim import Evaluator
 
 ROOT = Path(__file__).resolve().parent.parent
 SPLITS = ["train", "val", "test_interp", "test_interval", "test_extrap", "test"]
+FRESH_SPLITS = [FRESH_SPLIT]
 
 
 def generate(policy: GQEPolicy, record, mode: str, k: int = 16, temperature: float = 1.0, family: str = "sft",
@@ -69,12 +71,13 @@ def main(argv=None):
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--family", default="sft", help="method prefix: <family>_<mode>")
     p.add_argument("--cnot-budget", type=int, default=None)
+    p.add_argument("--fresh", action="store_true", help="score the test_fresh geometries (results_fresh/)")
     a = p.parse_args(argv)
 
     policy = GQEPolicy.load(a.ckpt or ROOT / "checkpoints" / a.system / "sft.pt")
-    teacher = load_teacher(a.system)
-    records = load_hamiltonians(a.system)
-    outdir = ROOT / "results" / a.system
+    teacher = load_teacher(a.system, "teacher_fresh" if a.fresh else "teacher")
+    records = load_hamiltonians(a.system, FRESH_SPLIT if a.fresh else None)
+    outdir = results_dir(a.fresh) / a.system
     for mode in a.modes:
         torch.manual_seed(a.seed)
         circuits, evals = zip(*(generate(policy, r, mode, a.k, a.temperature, a.family, a.cnot_budget) for r in records))
@@ -85,7 +88,7 @@ def main(argv=None):
         print(f"\n== {a.system} {mode}{a.tag}")
         print(f"{'split':14s} {'n':>3s} {'med|err|':>9s} {'max|err|':>9s} {'<1.6':>6s} {'<5':>6s} {'<10':>6s} "
               f"{'valid':>6s} {'#ops':>5s} {'match':>6s} {'evals':>7s}")
-        for split in SPLITS:
+        for split in FRESH_SPLITS if a.fresh else SPLITS:
             s = stats[split]
             ids = {e.geometry_id for e in evals if e.split == split or (split == "test" and e.split.startswith("test"))}
             match = np.mean([c.operators == teacher[c.geometry_id].operators for c in circuits if c.geometry_id in ids])

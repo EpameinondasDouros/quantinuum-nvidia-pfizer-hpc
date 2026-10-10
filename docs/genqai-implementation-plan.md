@@ -23,13 +23,13 @@ Branches: one per task or lane, named `feat/<short-name>`. Only merge to main af
 | B1 | ADAPT-VQE teacher labels with per-step cost logging | Udaya | ✅ | main `scripts/make_teacher.py` | All 207 converged and under 1.6 mHa (grad_tol 1e-4) |
 | B2 | Shared eval harness `genqai/evaluate.py` + baselines: UCCSD-VQE, fresh ADAPT, warm ADAPT, NN reuse, NN+refine | Udaya (agent) | ✅ | main `129743c` | `results/<system>/<method>.jsonl`. nn_refine and warm ADAPT hit 1.6 mHa on every test geometry with 10–30× fewer gradient evals than fresh ADAPT: this is the bar the model must beat |
 | B3 | Cross-check our ADAPT against `qiskit_algorithms.AdaptVQE` on h2 / lih4 | Udaya (agent) | ✅ | main `tests/test_baselines.py` | Agree within 1e-5 Ha |
-| B4 | Fair baselines + untouched test: sign-corrected NN reuse, non-ML angle regression on the canonical sequence, fresh held-out geometries never seen during tuning, all methods scored once | Udaya (agent) | 🟨 | `feat/fair-eval` | Without this a reviewer can say the transformer only beats a broken baseline |
+| B4 | Fair baselines + untouched test: sign-corrected NN reuse, non-ML angle regression on the canonical sequence, fresh held-out geometries never seen during tuning, all methods scored once | Udaya (agent) | ✅ | main `results_fresh/`, `scripts/report_fair.py` | **Verdict: on a fixed operator sequence, kernel-ridge angle regression matches or beats SFT one-shot.** h4 test_fresh: regression 100% < 1.6 mHa (max 0.59) vs SFT 65% (max 14.6). Orbital-sign gauge fixing is what rescues NN (h4 max 520 → 4.3). LiH extrapolation: linear interpolation in r beats both learned models. Headline must move to what regression cannot do: variable sequences / budget conditioning (D3) |
 | C1 | Hamiltonian-conditioned transformer (operators + von Mises angle head), SFT, one-shot / refine / best-of-K | Udaya (agent) | ✅ | main `checkpoints/<system>/sft.pt` | One-shot, zero energy evals, test median < 0.2 mHa all systems; h4 86% < 1.6 mHa (max 10.9) vs nn_reuse 32% (max 389). Weak spot: LiH extrapolation (max 5–7 mHa). Needed orbital-sign gauge fixing + canonical relabelling (one op sequence per system). Test set was lightly used during tuning: see B4 |
 | E1 | Grouped Pauli measurement, finite-shot energy with error bars, local ideal + noisy | Udaya (agent) | ✅ | main `genqai/measure.py` | Exact-probability reconstruction = exact energy to 1e-9. Groups: h2 2, lih4 25, lih6 48, h4 46 |
 | E2 | Same experiment on IonQ simulator, ideal + noisy (forte-1 / aria-1), one job | Udaya (agent) | ✅ | main `scripts/run_ionq_demo.py` | Real jobs ran. h2 (4 CX): aria-1 21 ± 6 mHa, forte-1 28 ± 7 mHa. lih4 teacher (172 CX): ~460 mHa under noise, so shorter circuits matter. Results in `results/*/ionq_demo_*.json` |
-| E3 | Qollab runtime probe: Qiskit version, can we pip install, is PyTorch there, job/shot limits, noise models | open | ⬜ | | Needs a human logged into Qollab. Blocks F2 design |
-| F1 | Integrate branches to main; one-command end-to-end run (data → teacher → SFT → generate → score → IonQ) | Udaya (agent) | 🟨 | `feat/demo` | Starts as soon as B2 + C1 land |
-| F2 | Judge-facing Qollab notebook: pick unseen geometry → generated circuit → energy vs FCI/HF/CCSD/ADAPT → IonQ run | Udaya (agent) | 🟨 | `feat/demo` | Depends on E3 answers |
+| E3 | Qollab runtime probe: Qiskit version, can we pip install, is PyTorch there, job/shot limits, noise models | open | ⬜ | `docs/qollab_runtime_checklist.md` | **Human needed:** walk the checklist in the live Qollab workspace and run the notebook there. Blocks the submission |
+| F1 | Integrate branches to main; one-command end-to-end run (data → teacher → SFT → generate → score → IonQ) | Udaya (agent) | ✅ | main `scripts/run_pipeline.py` | `--quick` (h2 + lih4) runs end to end in ~90 s; `--skip-train` uses committed checkpoints |
+| F2 | Judge-facing Qollab notebook: pick unseen geometry → generated circuit → energy vs FCI/HF/CCSD/ADAPT → IonQ run | Udaya (agent) | ✅ | main `notebooks/genqai_demo.ipynb`, `scripts/demo.py` | Run All works; live PySCF for any geometry, live generation, fair baselines, live ADAPT costs, IonQ ideal + aria-1 + forte-1 for h2. Falls back to stored Hamiltonians / replay if PySCF / torch missing. Still needs the E3 check on Qollab itself |
 | F3 | Figures 1 (energy curve + residuals), 2 (one-shot vs optimised), 3 (accuracy vs CNOTs), 5 (break-even), 6 (IonQ ideal vs noisy), regenerable from `results/` | Udaya (agent) | ✅ | main `figures/` | `python scripts/make_figures.py`; also writes `figures/summary.md` (README table) and `breakeven.json`. Generator methods appear automatically once their EvalRecords exist. Fig 4 waits on training logs |
 | F4 | README, ATTRIBUTION.md (every reused component + licence), MIT licence | Udaya | 🟨 | main | LICENSE + ATTRIBUTION done; final README after C1 + D1 results |
 | F5 | 150 s video recording a real run | open | ⬜ | | Human task |
@@ -44,14 +44,14 @@ Branches: one per task or lane, named `feat/<short-name>`. Only merge to main af
 | D3 | Budget-conditioned GRPO; energy-vs-CNOT frontier from one model vs ADAPT per budget | Udaya (agent) | 🟨 | `feat/rl` | The differentiator |
 | D4 | Break-even analysis (wall-clock and quantum-resource accounting), vs fresh and warm ADAPT; Figure 5 | open | ⬜ | | Needs B2 costs + C1 |
 | D5 | Figure 4: training evolution (held-out error and CNOTs per checkpoint for SFT / GRPO / distill) | Udaya (agent) | 🔀 | main `figures/fig4_training.png` | SFT curve exists; GRPO / distill lines appear when D1/D2 write logs |
-| D6 | Ablations: Hamiltonian vs geometry-only conditioning; NN vs transformer; energy-only vs resource-aware reward | open | ⬜ | | Geometry-only flag built into C1 |
+| D6 | Ablations: Hamiltonian vs geometry-only conditioning; NN vs transformer; energy-only vs resource-aware reward | Udaya (agent) | 🟨 | `feat/ablations` | On test_fresh: Hamiltonian vs geometry conditioning, gauge on/off, canonical vs raw labels, transformer vs regression vs NN |
 | D7 | IonQ native 2-qubit gate counts (MS/ZZ) for generated vs ADAPT circuits | open | ⬜ | | Never relabel CX as native |
 
 ### P3 — upside if time remains
 
 | ID | Task | Owner | Status | Where | Notes |
 | --- | --- | --- | --- | --- | --- |
-| X1 | Figure 7: learning curve (held-out error vs 10 / 20 / all training geometries) | open | ⬜ | | |
+| X1 | Figure 7: learning curve (held-out error vs 10 / 20 / all training geometries) | Udaya (agent) | 🟨 | `feat/ablations` | Train-set size 5/10/20/all × 3 seeds, transformer vs regression vs NN, x-axis also in teacher quantum evals |
 | X2 | Several teacher runs per geometry (seeds / perturbed init) as extra labels | open | ⬜ | | Same split, not new independent examples |
 | X3 | Qubit-excitation or CEO pool as a controlled comparison teacher | open | ⬜ | | Never mixed into the primary teacher |
 | X4 | H₄ or LiH-6q on IonQ noisy simulator | open | ⬜ | | Check group count and shot budget first |
