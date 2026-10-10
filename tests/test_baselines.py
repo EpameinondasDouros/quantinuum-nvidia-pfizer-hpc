@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 from genqai.adapt import run_adapt
-from genqai.baselines import NN_METHODS, nearest_train, run_method
+from genqai.baselines import NN_METHODS, load_train_set, nearest_train, run_method
 from genqai.chemistry import SYSTEMS, mapper_for
 from genqai.data import load_hamiltonians, load_teacher
 from genqai.evaluate import score_circuit, summarize
@@ -43,16 +43,16 @@ class _LoggingBank(dict):
 
 def test_nn_baselines_only_read_train_labels():
     recs = load_hamiltonians("lih4")
-    teacher = load_teacher("lih4")
-    train = [r for r in recs if r.split == "train"]
-    train_ids = {r.geometry_id for r in train}
-    bank = _LoggingBank({g: teacher[g] for g in train_ids})
+    train = load_train_set("lih4")
+    train_ids = {r.geometry_id for r in train.records}
+    train.bank, train.canon_bank = _LoggingBank(train.bank), _LoggingBank(train.canon_bank)
     for rec in recs[::5]:
         for m in NN_METHODS:
-            ev = run_method(m, rec, train, bank)
+            ev = run_method(m, rec, train)
             assert ev.extra["neighbor_geometry_id"] in train_ids
             assert ev.extra["neighbor_geometry_id"] != rec.geometry_id  # leave-one-out on train
-    assert bank.accessed and bank.accessed <= train_ids
+    for bank in (train.bank, train.canon_bank):
+        assert bank.accessed and bank.accessed <= train_ids
     with pytest.raises(ValueError):
         nearest_train(recs[0], recs)  # non-train candidates are refused
 
