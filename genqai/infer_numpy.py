@@ -46,7 +46,8 @@ def export_numpy(ckpt_path, out_path, part_bytes: int = PART_BYTES) -> list[Path
         p.write_bytes(blob[i:i + part_bytes])
         parts.append(p)
     manifest = {"config": ck["config"], "featurizer": ck["featurizer"], "tensors": names, "shapes": shapes,
-                "parts": [p.name for p in parts], "source": "/".join(Path(ckpt_path).parts[-3:]), "extra": {"best": ck["extra"].get("best")}}
+                "parts": [p.name for p in parts], "source": "/".join(Path(ckpt_path).parts[-3:]),
+                "extra": {"best": ck["extra"].get("best")}}
     out_path.write_text(json.dumps(manifest))
     return [out_path, *parts]
 
