@@ -14,6 +14,17 @@ Status: ⬜ open · 🟨 in progress (claimed) · ✅ done, merged to main · �
 
 Branches: one per task or lane, named `feat/<short-name>`. Only merge to main after `pytest -q` passes and the end-to-end pipeline still runs. Never force-push main. Secrets (`IONQ_API_KEY`) go in a local `.env` (gitignored), never in commits.
 
+### Phase 2: molecular workbench (Oct 10 night; contracts in `docs/workbench_contracts.md`)
+
+| ID | Task | Owner | Status | Where | Notes |
+| --- | --- | --- | --- | --- | --- |
+| W-A | Arbitrary molecules: SMILES (RDKit ETKDGv3, seeded), XYZ, atoms, presets; charge/multiplicity/basis/active space/mapping; open shell; capability report; generic Hamiltonian | Udaya (agent) | 🟨 | `feat/molecule` | Presets must stay byte-identical |
+| W-B | Model registry + routing (paths A/B/C/D) + unified generation API; default method chosen on VAL metrics | Udaya (agent) | 🟨 | `feat/registry` | KRR is the default where it validates better. Never hide it |
+| W-C | Circuit grading engine (validity, energy, resources, noise), two-stage ranking + Pareto, optimization (refine, prune, transpile, budget model); hardware-aware Pareto study vs KRR prefixes | Udaya (agent) | 🟨 | `feat/grading` | Report a null result if there's no improvement |
+| W-D | Backend registry, generalized packed single-circuit measurement, analytic measurement tests, execution records with provenance | Udaya (agent) | 🟨 | `feat/backends` | Width check before submission; no paid jobs |
+| W-E | Streamlit workbench, exports (Qiskit code, QASM, JSON, CSV), experiment store, job runner | Udaya (agent) | 🟨 | `feat/workbench` | Runs locally; Qollab keeps its main.py path |
+| W-F | Integration, regression checks, README, figures, Qollab bundle, submission text, video script | Udaya | 🟨 | main | Never publish |
+
 ### P1 — must ship (without these there is no submission)
 
 | ID | Task | Owner | Status | Where | Notes |
