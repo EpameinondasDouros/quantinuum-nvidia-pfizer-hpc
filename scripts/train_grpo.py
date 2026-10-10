@@ -25,7 +25,8 @@ import torch
 
 from genqai.data import load_hamiltonians, load_teacher
 from genqai.model import GQEPolicy
-from genqai.rl import GRPOConfig, GRPOTrainer, ReplayDB, RewardConfig, RewardModel, cnot_estimate, greedy_eval
+from genqai.rl import (GRPOConfig, GRPOTrainer, ReplayDB, RewardConfig, RewardModel, cnot_estimate, greedy_eval,
+                       record_train_time)
 from genqai.schema import dump_jsonl
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -113,12 +114,7 @@ def main(argv=None):
         if rec["val_score"] > best_rec["val_score"]:
             best_rec, best = rec, copy.deepcopy(policy.state_dict())
     log["best"] = best_rec
-    # train_time_s = total wall time to produce this model: this run + the init model's own (from
-    # results/<system>/<init stem>_train_log.json, itself cumulative), for break-even accounting
-    log["own_train_time_s"] = time.perf_counter() - t0
-    init_log = ROOT / "results" / a.system / f"{init.stem}_train_log.json"
-    log["init_train_time_s"] = json.loads(init_log.read_text()).get("train_time_s", 0.0) if init_log.exists() else 0.0
-    log["train_time_s"] = log["own_train_time_s"] + log["init_train_time_s"]
+    record_train_time(log, time.perf_counter() - t0, ROOT / "results", a.system, init)
     policy.load_state_dict(best)
     out = ROOT / "checkpoints" / a.system / f"{a.family}.pt"
     policy.save(out, args=vars(a), best=best_rec, init=str(init))

@@ -23,9 +23,11 @@ policy stays in eval mode) so sampling, old log-probs and updates see the same n
 """
 from __future__ import annotations
 
+import json
 import math
 from dataclasses import dataclass, field
 from functools import lru_cache
+from pathlib import Path
 
 import numpy as np
 import torch
@@ -37,6 +39,15 @@ from genqai.model import Cond, GQEPolicy
 from genqai.pool import get_pool
 from genqai.schema import GeneratedCircuit, HamiltonianRecord
 from genqai.sim import Evaluator
+
+
+def record_train_time(log: dict, own_s: float, results_dir, system: str, init_ckpt) -> None:
+    """log["train_time_s"] = total wall time to produce a model: own_s + the init checkpoint's
+    (results/<system>/<init stem>_train_log.json, itself cumulative), for break-even accounting."""
+    p = Path(results_dir) / system / f"{Path(init_ckpt).stem}_train_log.json" if init_ckpt else None
+    log["own_train_time_s"] = own_s
+    log["init_train_time_s"] = json.loads(p.read_text()).get("train_time_s", 0.0) if p and p.exists() else 0.0
+    log["train_time_s"] = own_s + log["init_train_time_s"]
 
 
 # ------------------------------------------------------------------------------- CX accounting

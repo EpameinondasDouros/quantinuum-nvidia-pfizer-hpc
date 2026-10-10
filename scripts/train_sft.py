@@ -29,6 +29,7 @@ from genqai.circuits import build_circuit, gate_stats
 from genqai.data import DATA_DIR, load_hamiltonians, load_teacher
 from genqai.features import budget_vector, fit_featurizer
 from genqai.model import Cond, GQEPolicy, build_policy
+from genqai.rl import record_train_time
 from genqai.schema import GeneratedCircuit, load_jsonl
 from genqai.sim import Evaluator
 
@@ -193,7 +194,7 @@ def main(argv=None):
                 break
 
     policy.load_state_dict(best)
-    log["train_time_s"] = time.perf_counter() - t0
+    record_train_time(log, time.perf_counter() - t0, ROOT / "results", a.system, a.init)
     out = Path(a.out) if a.out else ROOT / "checkpoints" / a.system / "sft.pt"
     out.parent.mkdir(parents=True, exist_ok=True)
     policy.to("cpu").save(out, args=vars(a), best=log["best"])
