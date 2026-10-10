@@ -489,12 +489,12 @@ def fig_ionq(results_dir, out_dir):
         nat_txt = ", ".join(f"{v['device']}: {v['native_2q_count']} {v['native_2q_gate'].upper()}"
                             for v in nat.values())
         prm = ", ".join(f"{k}={v:g} Å" for k, v in d["geometry_params"].items())
-        ax.set_title(f"{SYSTEM_LABEL.get(d['system'], d['system'])}, {prm} ({d['split']}) — "
+        ax.set_title(f"{SYSTEM_LABEL.get(d['system'], d['system'])}, {prm} ({d['split']}), {d['circuit']['source']} circuit — "
                      f"{g['cnot_count']} CX, depth {g['depth']}; native 2q: {nat_txt}; "
                      f"{d['num_groups']} QWC groups, {d['shots_requested']} shots requested",
                      loc="left", fontsize=8.5)
     axes[-1, 0].set_xlabel("E − E$_{FCI}$ (mHa; linear within ±10, log beyond; shaded ±1.6 mHa, line = FCI)")
-    fig.suptitle("Measured energy of the ADAPT circuit: local and IonQ cloud simulators", x=0.01, ha="left",
+    fig.suptitle("Measured circuit energies: local and IonQ cloud simulators", x=0.01, ha="left",
                  fontsize=11, color=INK)
     fig.tight_layout()
     return _save(fig, out_dir, "fig6_ionq")

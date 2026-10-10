@@ -5,6 +5,8 @@ Hamiltonian, the HF/CCSD/FCI references and the orbital choice all come from one
 All energies stored in a HamiltonianRecord are TOTAL energies in Hartree:
     E_total = <psi| H_qubit |psi> + energy_shift
 where energy_shift = nuclear repulsion + frozen-core energy (PySCF CASCI ecore).
+PySCF is imported only inside build_record, so stored records (data/<system>/hamiltonians.jsonl),
+pools and circuits work in runtimes where PySCF is not installed.
 """
 from __future__ import annotations
 
@@ -13,7 +15,6 @@ import json
 from dataclasses import dataclass
 
 import numpy as np
-from pyscf import ao2mo, cc, gto, mcscf, scf
 from qiskit.quantum_info import SparsePauliOp
 from qiskit_nature.second_q.hamiltonians import ElectronicEnergy
 from qiskit_nature.second_q.mappers import JordanWignerMapper, ParityMapper, QubitMapper
@@ -54,7 +55,7 @@ SYSTEMS: dict[str, SystemSpec] = {
 }
 
 
-def _select_active_orbitals(mol: gto.Mole, mf: scf.hf.RHF, spec: SystemSpec) -> list[int]:
+def _select_active_orbitals(mol, mf, spec: SystemSpec) -> list[int]:
     """Deterministic active-orbital choice (0-based MO indices).
 
     Frozen core = lowest (n_elec - active_electrons)/2 orbitals. Active orbitals are the next
@@ -106,6 +107,8 @@ def geometry_id(spec: SystemSpec, params: tuple[float, ...]) -> str:
 
 
 def build_record(spec: SystemSpec, params: tuple[float, ...]) -> HamiltonianRecord:
+    from pyscf import ao2mo, cc, gto, mcscf, scf
+
     params = tuple(float(p) for p in params)
     atoms = spec.atoms(params)
     mol = gto.M(
