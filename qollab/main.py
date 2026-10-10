@@ -148,8 +148,14 @@ def main(system: str = "h2", r: float = 1.33, a: float = 1.1, b: float = 1.7, sh
             plan = MeasurementPlan.from_record(rec)
             ionq = "ionq" in (type(qpu).__module__ + str(getattr(qpu, "name", ""))).lower()
             print(f"backend: {qpu}")
-            print(f"{plan.num_groups} qubit-wise-commuting measurement groups x {shots} shots, "
-                  f"ALL submitted as ONE job (one backend.run call)")
+            if ionq:
+                print(f"{plan.num_groups} qubit-wise-commuting measurement groups packed into ONE circuit "
+                      f"({plan.num_groups} copies of the state on {plan.num_groups * plan.num_qubits} qubits, each "
+                      f"read in its group's basis) x {shots} shots: Qollab's IonQ gateway runs one "
+                      f"single-circuit job per run")
+            else:
+                print(f"{plan.num_groups} qubit-wise-commuting measurement groups x {shots} shots, "
+                      f"ALL submitted as ONE job (one backend.run call)")
             if ionq:
                 print("IonQ: circuits are compiled server-side to IonQ native gates (GPI/GPI2 + MS/ZZ).")
                 nm = getattr(getattr(qpu, "options", None), "noise_model", None)
@@ -158,7 +164,8 @@ def main(system: str = "h2", r: float = 1.33, a: float = 1.1, b: float = 1.7, sh
             measured = measure_on_backend(rec, circ.operators, circ.angles, qpu, shots, plan=plan)
             err = 1000 * (measured.energy - rec.fci_energy)
             print(f"backend name: {measured.backend}   job id: {measured.meta.get('job_id', '-')}")
-            print(f"measured E = {measured.energy:.6f} +- {measured.stderr:.6f} Ha  ({measured.total_shots} shots)")
+            runs = shots if measured.meta.get("packed") else measured.total_shots
+            print(f"measured E = {measured.energy:.6f} +- {measured.stderr:.6f} Ha  ({runs} circuit executions)")
             exact = next((e.energy for e in evals if e.method == circ.source), None)
             print(f"error vs FCI = {err:+.2f} +- {1000 * measured.stderr:.2f} mHa"
                   + (f"\n(exact energy of this circuit: {exact:.6f} Ha; the difference is shot noise"

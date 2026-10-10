@@ -2,9 +2,10 @@ import json
 
 import numpy as np
 import pytest
+from qiskit import QuantumCircuit
 
 from genqai.circuits import build_circuit
-from genqai.data import DATA_DIR, load_hamiltonians
+from genqai.data import DATA_DIR, load_hamiltonians, load_teacher
 from genqai.measure import (
     MeasurementPlan,
     collect_ionq,
@@ -144,3 +145,19 @@ def test_measure_on_injected_backend(case):
     exact = Evaluator(rec).energy(c.operators, c.angles)
     assert est.backend == "basic_simulator" and est.total_shots == 20_000 * est.num_groups
     assert abs(est.energy - exact) < 5 * est.stderr + 1e-9
+
+
+def test_packed_single_circuit_matches_exact():
+    """Qollab's IonQ gateway takes one single-circuit job: all QWC groups packed on disjoint qubits."""
+    from qiskit_aer import AerSimulator
+
+    from genqai.measure import MeasurementPlan, measure_on_backend
+
+    rec = load_hamiltonians("h2", "test")[0]
+    circ = load_teacher("h2")[rec.geometry_id]
+    plan = MeasurementPlan.from_record(rec)
+    assert plan.packed_circuit(QuantumCircuit(rec.num_qubits)).num_qubits == plan.num_groups * rec.num_qubits
+    ev = Evaluator(rec)
+    exact = ev.energy(circ.operators, circ.angles)
+    est = measure_on_backend(rec, circ.operators, circ.angles, AerSimulator(seed_simulator=1), 200_000, packed=True)
+    assert est.meta["packed"] and abs(est.energy - exact) < 4 * est.stderr

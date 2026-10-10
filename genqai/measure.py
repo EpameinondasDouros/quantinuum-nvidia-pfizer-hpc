@@ -97,6 +97,29 @@ class MeasurementPlan:
             out.append(qc)
         return out
 
+    def packed_circuit(self, state: QuantumCircuit) -> QuantumCircuit:
+        """ALL groups in ONE circuit: copy g of the state on qubits [g*n, (g+1)*n), rotated into group
+        g's basis. Copies are a product state, so every shot samples each group independently.
+        For backends that take one single-circuit job per run (Qollab's IonQ gateway)."""
+        n = self.num_qubits
+        packed = QuantumCircuit(n * self.num_groups, name="packed_groups")
+        for g, qc in enumerate(self.circuits(state)):
+            packed.compose(qc.remove_final_measurements(inplace=False), qubits=range(g * n, (g + 1) * n),
+                           inplace=True)
+        packed.measure_all()
+        return packed
+
+    def unpack_counts(self, counts: dict) -> list[dict]:
+        """Per-group marginal counts from a packed_circuit result."""
+        n, mask = self.num_qubits, (1 << self.num_qubits) - 1
+        out = [dict() for _ in range(self.num_groups)]
+        for key, c in counts.items():
+            b = _outcome_int(key)
+            for g in range(self.num_groups):
+                sub = (b >> (g * n)) & mask
+                out[g][sub] = out[g].get(sub, 0) + c
+        return out
+
     def _group_values(self, g: int, outcomes: np.ndarray) -> np.ndarray:
         """f_g(b) for integer outcomes b (bit q of b = qubit q)."""
         grp = self.groups[g]
@@ -294,20 +317,47 @@ def result_counts(result, num_circuits: int) -> list[dict]:
         return [dict(c) for c in allc]
 
 
-def measure_on_backend(record: HamiltonianRecord, ops, angles, backend, shots_per_group: int,
-                       plan: MeasurementPlan | None = None) -> EnergyEstimate:
-    """Measured energy on a ready-made Qiskit backend object (e.g. the one Qollab injects).
+def _backend_name(backend) -> str:
+    name = getattr(backend, "name", type(backend).__name__)
+    return str(name() if callable(name) else name)  # BackendV1: method, BackendV2: property
 
-    Every QWC group goes into ONE backend.run(list, shots=...) call -- IonQ backends allow one
-    job per Qollab run. The backend's own options (noise model, ...) are left untouched.
+
+def _backend_qubits(backend) -> int | None:
+    n = getattr(backend, "num_qubits", None)
+    if n is None and hasattr(backend, "configuration"):
+        n = getattr(backend.configuration(), "n_qubits", None)
+    return n
+
+
+def measure_on_backend(record: HamiltonianRecord, ops, angles, backend, shots_per_group: int,
+                       plan: MeasurementPlan | None = None, packed: bool | None = None) -> EnergyEstimate:
+    """Measured energy on a ready-made Qiskit backend object (e.g. the one Qollab injects), in ONE job.
+
+    packed=False: one backend.run(list_of_group_circuits). packed=True: one circuit holding a copy of
+    the state per group (MeasurementPlan.packed_circuit) -- Qollab's IonQ gateway accepts only one
+    single-circuit job per run. Default: packed for IonQ backends. Backend options are left untouched.
     """
     plan = plan or MeasurementPlan.from_record(record)
-    circuits = plan.circuits(compile_state(build_circuit(record, ops, angles)))
-    tqc = transpile(circuits, backend=backend, optimization_level=1, seed_transpiler=0)
-    job = backend.run(tqc, shots=shots_per_group)
-    est = plan.estimate(result_counts(job.result(), len(circuits)))
-    name = getattr(backend, "name", type(backend).__name__)
-    est.backend = str(name() if callable(name) else name)  # BackendV1: method, BackendV2: property
+    name = _backend_name(backend)
+    if packed is None:
+        packed = "ionq" in (name + type(backend).__module__).lower()
+    state = compile_state(build_circuit(record, ops, angles))
+    if packed:
+        width, cap = plan.num_qubits * plan.num_groups, _backend_qubits(backend)
+        if cap is not None and width > cap:
+            raise ValueError(f"{plan.num_groups} measurement groups x {plan.num_qubits} qubits = {width} qubits in one "
+                             f"circuit, but {name} has {cap}. Use h2 on IonQ, or a local simulator for this system.")
+        tqc = transpile(plan.packed_circuit(state), backend=backend, optimization_level=1, seed_transpiler=0)
+        job = backend.run(tqc, shots=shots_per_group)
+        dists = plan.unpack_counts(result_counts(job.result(), 1)[0])
+    else:
+        circuits = plan.circuits(state)
+        tqc = transpile(circuits, backend=backend, optimization_level=1, seed_transpiler=0)
+        job = backend.run(tqc, shots=shots_per_group)
+        dists = result_counts(job.result(), len(circuits))
+    est = plan.estimate(dists)
+    est.backend = name
+    est.meta["packed"] = packed
     try:
         est.meta["job_id"] = job.job_id()
     except Exception:
