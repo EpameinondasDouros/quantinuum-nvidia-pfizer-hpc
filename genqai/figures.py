@@ -120,7 +120,7 @@ def _evals(e: EvalRecord) -> int:
 def _save(fig, out_dir: Path, name: str) -> Path:
     path = out_dir / f"{name}.png"
     fig.savefig(path, dpi=160, bbox_inches="tight")
-    fig.savefig(out_dir / f"{name}.pdf", bbox_inches="tight")
+    fig.savefig(out_dir / f"{name}.pdf", bbox_inches="tight", metadata={"CreationDate": None, "ModDate": None})
     plt.close(fig)
     return path
 
