@@ -21,13 +21,19 @@ These replace the earlier guesses. They change the judge-facing design: Qollab d
 | Persistence | None between runs | Ship precomputed results (teacher labels, baseline tables) as files |
 | Browser | Needs WebAssembly JSPI (recent Chrome/Edge) | Note this for judges |
 
-## Still to verify with a real project run (needs a Qollab project in the account)
+## Verified by running our project on Qollab (Oct 10, 2026)
 
-1. `build_record` time for h2 / lih4 / h4 under Pyodide. That PySCF imports is confirmed by Qollab's showcase.
-2. `qiskit_nature` UCCSD pool construction works (`genqai.pool`).
-3. NumPy transformer inference matches the PyTorch checkpoint (also checked offline in tests).
-4. `backend.run(list_of_circuits, shots=n)` on IonQ Aria 1 / Forte 1 returns one result with per-circuit counts, and our parser handles it. Also the built-in BasicSimulator.
-5. End-to-end wall-clock from pressing Run.
+Project (draft, unpublished): https://qollab.xyz/u/udsy/genqai-one-shot-quantum-chemis. It was created by uploading three .zip archives; the browser upload tool caps a call at 10 MB, so weights went in separate archives with "Keep and add".
+
+| Check | Result |
+| --- | --- |
+| Runtime | Python 3.14.2 (Pyodide), numpy 2.4.6, scipy 1.18.0, pyscf 2.14.0, qiskit-nature 0.8.0, scikit-learn 1.8.0 (installed from requirements.txt) |
+| PySCF in WebAssembly | `gto`, `scf`, `ao2mo` work (LiH RHF in 0.06 s, matches native to 1e-14). **`fci`, `mcscf`, `cc` fail** (`OSError: no file with expected extension`: no libfci/libmcscf/libcc). `mol.intor("int2e")` (s1) **crashes the runtime**. We therefore build the active-space Hamiltonian and FCI from RHF + `ao2mo.incore` (`genqai/chemistry.py`), which is identical to CASCI to 1e-14 natively. CCSD shows "n/a" in the browser |
+| IonQ gateway | **Accepts only single-circuit jobs** (`Only job type ionq.circuit.v1 is supported`; a multi-circuit list gets HTTP 400), and one job per run. We pack all QWC groups into ONE circuit as copies of the state on disjoint qubits (`MeasurementPlan.packed_circuit`). h2 = 2 groups × 2 qubits = 4 qubits. Systems whose groups × qubits > 29 can't be measured on IonQ in one run; the code says so |
+| IonQ remote simulators | Noise models only (Aria 1/2, Forte 1, Forte Enterprise 1), free. There is no ideal IonQ sim in the dialog. Hardware entries say "Credits apply" |
+| Run form | `def main(system: str, r: float, a: float, b: float, shots: int, live_adapt: bool)` shows as a form |
+| End to end, h2 r = 1.33 Å, built-in simulator | 6.3 s total. Live PySCF 0.3 s, NumPy transformer 20 ms (error 0.006 mHa), measured +6.6 ± 5.8 mHa |
+| End to end, h2 r = 1.33 Å, IonQ Forte 1 sim | 18.2 s total (IonQ 11.8 s). Measured **+7.8 ± 5.8 mHa** vs FCI, job `01a12826-5478-72af-b517-c3e60f663d79`. Qollab also shows the compiled native circuit and the probabilities |
 
 ## Context from Qollab's own chemistry article (qollab.xyz/learn/quantum-chemistry)
 
