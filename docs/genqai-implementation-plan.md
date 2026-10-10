@@ -29,7 +29,7 @@ Branches: one per task or lane, named `feat/<short-name>`. Only merge to main af
 | E3 | Qollab runtime probe: Qiskit version, can we pip install, is PyTorch there, job/shot limits, noise models | open | ⬜ | | Needs a human logged into Qollab. Blocks F2 design |
 | F1 | Integrate branches to main; one-command end-to-end run (data → teacher → SFT → generate → score → IonQ) | Udaya | ⬜ | | Starts as soon as B2 + C1 land |
 | F2 | Judge-facing Qollab notebook: pick unseen geometry → generated circuit → energy vs FCI/HF/CCSD/ADAPT → IonQ run | open | ⬜ | | Depends on E3 answers |
-| F3 | Figures 1 (energy curve + residuals), 2 (one-shot vs optimised), 3 (accuracy vs CNOTs), 6 (IonQ ideal vs noisy), regenerable from `results/` | open | ⬜ | | |
+| F3 | Figures 1 (energy curve + residuals), 2 (one-shot vs optimised), 3 (accuracy vs CNOTs), 5 (break-even), 6 (IonQ ideal vs noisy), regenerable from `results/` | Udaya (agent) | 🟨 | `feat/figures` | Picks up generator results automatically when C1 lands |
 | F4 | README, ATTRIBUTION.md (every reused component + licence), MIT licence | Udaya | 🟨 | main | LICENSE + README stub done; ATTRIBUTION open |
 | F5 | 150 s video recording a real run | open | ⬜ | | Human task |
 | F6 | Qollab project page, submission before Oct 11 7 PM ET | open | ⬜ | | Human task |
