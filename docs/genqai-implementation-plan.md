@@ -23,7 +23,7 @@ Branches: one per task or lane, named `feat/<short-name>`. Only merge to main af
 | B1 | ADAPT-VQE teacher labels with per-step cost logging | Udaya | ✅ | main `scripts/make_teacher.py` | All 207 converged and under 1.6 mHa (grad_tol 1e-4) |
 | B2 | Shared eval harness `genqai/evaluate.py` + baselines: UCCSD-VQE, fresh ADAPT, warm ADAPT, NN reuse, NN+refine | Udaya (agent) | ✅ | main `129743c` | `results/<system>/<method>.jsonl`. nn_refine and warm ADAPT hit 1.6 mHa on every test geometry with 10–30× fewer gradient evals than fresh ADAPT: this is the bar the model must beat |
 | B3 | Cross-check our ADAPT against `qiskit_algorithms.AdaptVQE` on h2 / lih4 | Udaya (agent) | ✅ | main `tests/test_baselines.py` | Agree within 1e-5 Ha |
-| C1 | Hamiltonian-conditioned transformer (operators + von Mises angle head), SFT, one-shot / refine / best-of-K | Udaya (agent) | 🟨 | `feat/model` | Budget-conditioning input built in for D3 |
+| C1 | Hamiltonian-conditioned transformer (operators + von Mises angle head), SFT, one-shot / refine / best-of-K | Udaya (agent) | ✅ | main `checkpoints/<system>/sft.pt` | One-shot, zero energy evals, test median < 0.2 mHa all systems; h4 86% < 1.6 mHa (max 10.9) vs nn_reuse 32% (max 389). Weak spot: LiH extrapolation (max 5–7 mHa). Needed orbital-sign gauge fixing + canonical relabelling (one op sequence per system). Test set was lightly used during tuning: see B4 |
 | E1 | Grouped Pauli measurement, finite-shot energy with error bars, local ideal + noisy | Udaya (agent) | ✅ | main `genqai/measure.py` | Exact-probability reconstruction = exact energy to 1e-9. Groups: h2 2, lih4 25, lih6 48, h4 46 |
 | E2 | Same experiment on IonQ simulator, ideal + noisy (forte-1 / aria-1), one job | Udaya (agent) | ✅ | main `scripts/run_ionq_demo.py` | Real jobs ran. h2 (4 CX): aria-1 21 ± 6 mHa, forte-1 28 ± 7 mHa. lih4 teacher (172 CX): ~460 mHa under noise, so shorter circuits matter. Results in `results/*/ionq_demo_*.json` |
 | E3 | Qollab runtime probe: Qiskit version, can we pip install, is PyTorch there, job/shot limits, noise models | open | ⬜ | | Needs a human logged into Qollab. Blocks F2 design |
@@ -42,7 +42,7 @@ Branches: one per task or lane, named `feat/<short-name>`. Only merge to main af
 | D2 | Self-distillation round(s): SFT → SFT+GRPO → SFT+GRPO+distill, all scored on the frozen test set | open | ⬜ | | After D1 |
 | D3 | Budget-conditioned GRPO; energy-vs-CNOT frontier from one model vs ADAPT per budget | open | ⬜ | | The differentiator |
 | D4 | Break-even analysis (wall-clock and quantum-resource accounting), vs fresh and warm ADAPT; Figure 5 | open | ⬜ | | Needs B2 costs + C1 |
-| D5 | Figure 4: training evolution (held-out error and CNOTs per checkpoint for SFT / GRPO / distill) | open | ⬜ | | |
+| D5 | Figure 4: training evolution (held-out error and CNOTs per checkpoint for SFT / GRPO / distill) | Udaya (agent) | 🔀 | main `figures/fig4_training.png` | SFT curve exists; GRPO / distill lines appear when D1/D2 write logs |
 | D6 | Ablations: Hamiltonian vs geometry-only conditioning; NN vs transformer; energy-only vs resource-aware reward | open | ⬜ | | Geometry-only flag built into C1 |
 | D7 | IonQ native 2-qubit gate counts (MS/ZZ) for generated vs ADAPT circuits | open | ⬜ | | Never relabel CX as native |
 

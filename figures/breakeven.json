@@ -19,6 +19,24 @@
      "per_geometry": 4.25,
      "break_even_M": 14.545454545454545,
      "fixed_note": "teacher ADAPT on training geometries"
+    },
+    "sft_bestofk": {
+     "fixed": 120.0,
+     "per_geometry": 16.0,
+     "break_even_M": null,
+     "fixed_note": "teacher ADAPT on training geometries (training uses no quantum evaluations)"
+    },
+    "sft_oneshot": {
+     "fixed": 120.0,
+     "per_geometry": 0.0,
+     "break_even_M": 9.6,
+     "fixed_note": "teacher ADAPT on training geometries (training uses no quantum evaluations)"
+    },
+    "sft_refine": {
+     "fixed": 120.0,
+     "per_geometry": 3.625,
+     "break_even_M": 13.52112676056338,
+     "fixed_note": "teacher ADAPT on training geometries (training uses no quantum evaluations)"
     }
    }
   },
@@ -41,6 +59,24 @@
      "per_geometry": 0.00022946362696529832,
      "break_even_M": 33.522486610452376,
      "fixed_note": "teacher ADAPT on training geometries"
+    },
+    "sft_bestofk": {
+     "fixed": 23.96353904303396,
+     "per_geometry": 0.0052365781248226995,
+     "break_even_M": null,
+     "fixed_note": "teacher ADAPT on training geometries + model training time"
+    },
+    "sft_oneshot": {
+     "fixed": 23.96353904303396,
+     "per_geometry": 0.0017090518722397974,
+     "break_even_M": null,
+     "fixed_note": "teacher ADAPT on training geometries + model training time"
+    },
+    "sft_refine": {
+     "fixed": 23.96353904303396,
+     "per_geometry": 0.0020082707451365422,
+     "break_even_M": null,
+     "fixed_note": "teacher ADAPT on training geometries + model training time"
     }
    }
   }
@@ -65,6 +101,24 @@
      "per_geometry": 25.642857142857142,
      "break_even_M": 48.53488372093023,
      "fixed_note": "teacher ADAPT on training geometries"
+    },
+    "sft_bestofk": {
+     "fixed": 6261.0,
+     "per_geometry": 16.0,
+     "break_even_M": 45.15919629057187,
+     "fixed_note": "teacher ADAPT on training geometries (training uses no quantum evaluations)"
+    },
+    "sft_oneshot": {
+     "fixed": 6261.0,
+     "per_geometry": 0.0,
+     "break_even_M": 40.48683602771363,
+     "fixed_note": "teacher ADAPT on training geometries (training uses no quantum evaluations)"
+    },
+    "sft_refine": {
+     "fixed": 6261.0,
+     "per_geometry": 20.785714285714285,
+     "break_even_M": 46.773745997865525,
+     "fixed_note": "teacher ADAPT on training geometries (training uses no quantum evaluations)"
     }
    }
   },
@@ -87,6 +141,24 @@
      "per_geometry": 0.003060400285383886,
      "break_even_M": 66.77076453790158,
      "fixed_note": "teacher ADAPT on training geometries"
+    },
+    "sft_bestofk": {
+     "fixed": 98.1528017080418,
+     "per_geometry": 0.025576674071219583,
+     "break_even_M": null,
+     "fixed_note": "teacher ADAPT on training geometries + model training time"
+    },
+    "sft_oneshot": {
+     "fixed": 98.1528017080418,
+     "per_geometry": 0.005227677072980441,
+     "break_even_M": 31562.516549209562,
+     "fixed_note": "teacher ADAPT on training geometries + model training time"
+    },
+    "sft_refine": {
+     "fixed": 98.1528017080418,
+     "per_geometry": 0.008076988071739575,
+     "break_even_M": 376816.40756122296,
+     "fixed_note": "teacher ADAPT on training geometries + model training time"
     }
    }
   }
@@ -111,6 +183,24 @@
      "per_geometry": 24.058823529411764,
      "break_even_M": 27.30424528301887,
      "fixed_note": "teacher ADAPT on training geometries"
+    },
+    "sft_bestofk": {
+     "fixed": 6129.0,
+     "per_geometry": 16.0,
+     "break_even_M": 26.357955982797876,
+     "fixed_note": "teacher ADAPT on training geometries (training uses no quantum evaluations)"
+    },
+    "sft_oneshot": {
+     "fixed": 6129.0,
+     "per_geometry": 0.0,
+     "break_even_M": 24.661065088757397,
+     "fixed_note": "teacher ADAPT on training geometries (training uses no quantum evaluations)"
+    },
+    "sft_refine": {
+     "fixed": 6129.0,
+     "per_geometry": 22.647058823529413,
+     "break_even_M": 27.13359375,
+     "fixed_note": "teacher ADAPT on training geometries (training uses no quantum evaluations)"
     }
    }
   },
@@ -133,6 +223,24 @@
      "per_geometry": 0.003360713174676194,
      "break_even_M": 37.82416288299135,
      "fixed_note": "teacher ADAPT on training geometries"
+    },
+    "sft_bestofk": {
+     "fixed": 68.82650908399955,
+     "per_geometry": 0.04373509800044464,
+     "break_even_M": null,
+     "fixed_note": "teacher ADAPT on training geometries + model training time"
+    },
+    "sft_oneshot": {
+     "fixed": 68.82650908399955,
+     "per_geometry": 0.006609389586682322,
+     "break_even_M": 13684.989119382604,
+     "fixed_note": "teacher ADAPT on training geometries + model training time"
+    },
+    "sft_refine": {
+     "fixed": 68.82650908399955,
+     "per_geometry": 0.010299759826225722,
+     "break_even_M": 51402.457835104346,
+     "fixed_note": "teacher ADAPT on training geometries + model training time"
     }
    }
   }
@@ -157,6 +265,24 @@
      "per_geometry": 76.0909090909091,
      "break_even_M": 39.18912386706948,
      "fixed_note": "teacher ADAPT on training geometries"
+    },
+    "sft_bestofk": {
+     "fixed": 32429.0,
+     "per_geometry": 16.0,
+     "break_even_M": 36.53597582834025,
+     "fixed_note": "teacher ADAPT on training geometries (training uses no quantum evaluations)"
+    },
+    "sft_oneshot": {
+     "fixed": 32429.0,
+     "per_geometry": 0.0,
+     "break_even_M": 35.88902862317018,
+     "fixed_note": "teacher ADAPT on training geometries (training uses no quantum evaluations)"
+    },
+    "sft_refine": {
+     "fixed": 32429.0,
+     "per_geometry": 69.54545454545455,
+     "break_even_M": 38.88157392773448,
+     "fixed_note": "teacher ADAPT on training geometries (training uses no quantum evaluations)"
     }
    }
   },
@@ -179,6 +305,24 @@
      "per_geometry": 0.02049280672839483,
      "break_even_M": 47.321078801770916,
      "fixed_note": "teacher ADAPT on training geometries"
+    },
+    "sft_bestofk": {
+     "fixed": 139.0849451189133,
+     "per_geometry": 0.07836343945514686,
+     "break_even_M": 11725.372553555564,
+     "fixed_note": "teacher ADAPT on training geometries + model training time"
+    },
+    "sft_oneshot": {
+     "fixed": 139.0849451189133,
+     "per_geometry": 0.01658224800022171,
+     "break_even_M": 1888.635890927139,
+     "fixed_note": "teacher ADAPT on training geometries + model training time"
+    },
+    "sft_refine": {
+     "fixed": 139.0849451189133,
+     "per_geometry": 0.03471617613633333,
+     "break_even_M": 2505.6223254446713,
+     "fixed_note": "teacher ADAPT on training geometries + model training time"
     }
    }
   }
