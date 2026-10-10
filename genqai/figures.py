@@ -27,7 +27,7 @@ from genqai.evaluate import summarize  # noqa: E402
 from genqai.schema import EvalRecord, load_jsonl  # noqa: E402
 
 SYSTEMS = ("h2", "lih4", "lih6", "h4")
-SYSTEM_LABEL = {"h2": "H$_2$ (4q)", "lih4": "LiH (4q)", "lih6": "LiH (6q)", "h4": "H$_4$ (8q)"}
+SYSTEM_LABEL = {"h2": "H$_2$ (2q)", "lih4": "LiH (4q)", "lih6": "LiH (6q)", "h4": "H$_4$ (8q)"}
 TEST_SPLITS = ("test_interp", "test_interval", "test_extrap")
 CHEM_ACC = 1.6  # mHa
 ERR_FLOOR = 1e-6  # mHa; |errors| below this are drawn at the floor (numerically exact)
