@@ -14,7 +14,7 @@ from pathlib import Path
 import numpy as np
 
 from genqai.chemistry import SYSTEMS, build_record
-from genqai.schema import HamiltonianRecord, dump_jsonl, load_jsonl
+from genqai.schema import GeneratedCircuit, HamiltonianRecord, dump_jsonl, load_jsonl
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
@@ -71,3 +71,8 @@ def load_hamiltonians(system: str, split: str | None = None) -> list[Hamiltonian
     if split is None:
         return recs
     return [r for r in recs if r.split == split or (split == "test" and r.split.startswith("test"))]
+
+
+def load_teacher(system: str) -> dict[str, GeneratedCircuit]:
+    """ADAPT teacher circuits keyed by geometry_id."""
+    return {c.geometry_id: c for c in load_jsonl(DATA_DIR / system / "teacher.jsonl", GeneratedCircuit)}
