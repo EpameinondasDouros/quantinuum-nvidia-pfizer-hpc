@@ -20,7 +20,7 @@ import numpy as np
 import torch
 
 from genqai.circuits import build_circuit, gate_stats
-from genqai.data import load_hamiltonians, load_teacher
+from genqai.data import load_hamiltonians, load_teacher, train_subset
 from genqai.features import budget_vector, fit_featurizer
 from genqai.model import Cond, build_policy
 from genqai.sim import Evaluator
@@ -36,6 +36,9 @@ def parse_args(argv=None):
     p.add_argument("--targets", default="teacher_canonical",
                    help="data/<system>/<targets>.jsonl: raw ADAPT 'teacher' or canonicalised labels "
                         "from scripts/make_canonical_teacher.py")
+    p.add_argument("--train-subset", type=int, default=None,
+                   help="train on N random TRAIN geometries only (genqai.data.train_subset; learning curve)")
+    p.add_argument("--subset-seed", type=int, default=0)
     p.add_argument("--epochs", type=int, default=3000)
     p.add_argument("--batch-size", type=int, default=16)
     p.add_argument("--lr", type=float, default=1e-3)
@@ -82,7 +85,7 @@ def main(argv=None):
     dev = torch.device(a.device)
 
     teacher = load_teacher(a.system, a.targets)
-    train = load_hamiltonians(a.system, "train")
+    train = train_subset(load_hamiltonians(a.system, "train"), a.train_subset, a.subset_seed)
     val = load_hamiltonians(a.system, "val")
     feat = fit_featurizer(a.system, a.cond, gauge=not a.no_gauge)
     policy = build_policy(

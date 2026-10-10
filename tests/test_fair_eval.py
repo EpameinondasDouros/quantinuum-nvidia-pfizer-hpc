@@ -4,7 +4,7 @@ import pytest
 
 from genqai.baselines import gauge_map, load_train_set, nearest_train, run_method
 from genqai.data import (FRESH_MIN_GRID_DIST, FRESH_SPLIT, fresh_geometries, fresh_regime, geometry_grid,
-                         hamiltonians_path, load_hamiltonians, load_teacher)
+                         hamiltonians_path, load_hamiltonians, load_teacher, train_subset)
 from genqai.features import fit_featurizer
 from genqai.regression import AngleInterpolator, AngleRegressor
 from genqai.sim import Evaluator
@@ -96,3 +96,13 @@ def test_angle_baselines_use_train_labels_and_val_hamiltonians_only():
     assert interp_bank.accessed == train_ids
     with pytest.raises(ValueError):
         AngleInterpolator(train.featurizer).fit(train.val_records, interp_bank)
+
+
+def test_train_subsets_nested_and_train_only():
+    train = load_hamiltonians("h4", "train")
+    ids = [{r.geometry_id for r in train_subset(train, n, seed=1)} for n in (5, 10, 20)]
+    assert [len(i) for i in ids] == [5, 10, 20] and ids[0] < ids[1] < ids[2]
+    assert train_subset(train, None) == train
+    assert {r.geometry_id for r in load_train_set("h4", 5, 1).records} == ids[0]
+    with pytest.raises(ValueError):
+        train_subset(load_hamiltonians("h4", "val"), 2)

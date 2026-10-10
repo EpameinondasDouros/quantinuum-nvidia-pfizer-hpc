@@ -500,6 +500,74 @@ def fig_ionq(results_dir, out_dir):
     return _save(fig, out_dir, "fig6_ionq")
 
 
+# ------------------------------------------------------------------- figure 8: learning curve
+
+LC_METHODS = ("sft_oneshot", "angle_regression", "angle_interp", "nn_reuse_gauge")
+LC_MARKER = {"sft_oneshot": "D", "angle_regression": "o", "angle_interp": "s", "nn_reuse_gauge": "^"}
+
+
+def fig_learning_curve(results_dir, out_dir):
+    """test_fresh one-shot error vs number of TRAIN geometries (results/learning_curve.jsonl from
+    scripts/run_ablations.py curve): mean over subset seeds, seed range as a bar, x ticks also give
+    the teacher ADAPT cost of the subset."""
+    path = Path(results_dir) / "learning_curve.jsonl"
+    if not path.exists():
+        return None
+    rows = [r for r in load_jsonl(path) if r["split"] == FRESH_SPLIT]
+    systems = [s for s in SYSTEMS if any(r["system"] == s for r in rows)]
+    metrics = (("median_abs_err_mha", "median |E − E$_{FCI}$| (mHa)"),
+               ("frac_under_1.6mha", "geometries < 1.6 mHa (%)"))
+    fig, axes = plt.subplots(len(systems), 2, figsize=(9.5, 3.3 * len(systems)), squeeze=False)
+    for i, s in enumerate(systems):
+        rs = [r for r in rows if r["system"] == s]
+        ns = sorted({r["n_train"] for r in rs})
+        cost = {n: np.mean([r["teacher_evals"] for r in rs if r["n_train"] == n]) for n in ns}
+        for j, (key, ylabel) in enumerate(metrics):
+            ax = axes[i, j]
+            scale = 100 if key.startswith("frac") else 1
+            ends = []
+            for m in [m for m in LC_METHODS if any(r["method"] == m for r in rs)]:
+                st = {**style(m), **({"label": "SFT transformer"} if m == "sft_oneshot" else {})}
+                ys = [[scale * max(r[key], ERR_FLOOR) for r in rs if r["method"] == m and r["n_train"] == n] for n in ns]
+                mid = [np.median(y) for y in ys]
+                ax.vlines(ns, [min(y) for y in ys], [max(y) for y in ys], color=st["color"], lw=1, alpha=0.5)
+                ax.plot(ns, mid, color=st["color"], marker=LC_MARKER[m], ms=6, mec=SURFACE, mew=1, label=st["label"])
+                ends.append((np.log10(mid[-1]), st["label"]))
+            if j == 0:  # direct labels at the right end (ink text), nudged apart by >= 0.45 decades
+                ends.sort()
+                for k in range(1, len(ends)):
+                    ends[k] = (max(ends[k][0], ends[k - 1][0] + 0.45), ends[k][1])
+                for y, lab in ends:
+                    ax.annotate(lab, (ns[-1], 10 ** y), xytext=(8, 0), textcoords="offset points", va="center",
+                                fontsize=7, color=INK2)
+            ax.set_xscale("log")
+            ax.set_xticks(ns, [f"{n}\n{cost[n] / 1000:.1f}k" for n in ns])
+            ax.minorticks_off()
+            ax.set_xlim(ns[0] / 1.3, ns[-1] * (2.2 if j == 0 else 1.3))
+            ax.set_ylabel(ylabel)
+            if key == "median_abs_err_mha":
+                ax.axhspan(ERR_FLOOR / 2, CHEM_ACC, color=BAND, lw=0, zorder=0)
+                ax.set_yscale("log")
+            else:
+                ax.set_ylim(-3, 103)
+            if i == len(systems) - 1:
+                ax.set_xlabel("training geometries N  (below: teacher ADAPT evaluations)")
+        axes[i, 0].set_title(f"{SYSTEM_LABEL[s]} — {rs[0]['n']} test_fresh geometries", loc="left")
+    seen = {}
+    for ax in axes.flat:
+        for h, lab in zip(*ax.get_legend_handles_labels()):
+            seen.setdefault(lab, h)
+    fig.legend(seen.values(), seen.keys(), loc="lower center", ncol=len(seen), bbox_to_anchor=(0.5, -0.03))
+    fig.text(0.01, -0.07, "Nested random TRAIN subsets, 3 subset seeds per N (line = median over seeds, bar = seed range; the "
+             "largest N is the full TRAIN set, one run). Teacher evaluations = ADAPT pool-gradient + energy "
+             "evaluations summed over the N geometries. All methods one-shot, 0 energy evaluations at inference. "
+             "Shaded: below 1.6 mHa.", fontsize=7.5, color=INK2, wrap=True)
+    fig.suptitle("Data efficiency: one-shot accuracy on untouched geometries vs training-set size", x=0.01,
+                 ha="left", fontsize=11, color=INK)
+    fig.tight_layout()
+    return _save(fig, out_dir, "fig8_learning_curve")
+
+
 # ---------------------------------------------------------------------------- summary table
 
 def summary_markdown(data) -> str:
@@ -552,6 +620,8 @@ def make_all(results_dir, out_dir) -> dict[str, str]:
     (out_dir / "breakeven.json").write_text(json.dumps(be, indent=1))
     run("fig5_breakeven", fig_breakeven, be, out_dir)
     run("fig6_ionq", fig_ionq, results_dir, out_dir, why="no results/<system>/ionq_demo_*.json")
+    run("fig8_learning_curve", fig_learning_curve, results_dir, out_dir,
+        why="no results/learning_curve.jsonl (scripts/run_ablations.py curve)")
     (out_dir / "summary.md").write_text(summary_markdown(data))
     report["summary"] = str(out_dir / "summary.md")
     return report
