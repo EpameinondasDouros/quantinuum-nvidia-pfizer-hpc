@@ -1,0 +1,186 @@
+{
+ "h2": {
+  "evals": {
+   "n_train": 10,
+   "methods": {
+    "adapt": {
+     "fixed": 0.0,
+     "per_geometry": 12.5,
+     "break_even_M": 0.0
+    },
+    "adapt_warm": {
+     "fixed": 120.0,
+     "per_geometry": 7.25,
+     "break_even_M": 22.857142857142858,
+     "fixed_note": "teacher ADAPT on training geometries"
+    },
+    "nn_refine": {
+     "fixed": 120.0,
+     "per_geometry": 4.25,
+     "break_even_M": 14.545454545454545,
+     "fixed_note": "teacher ADAPT on training geometries"
+    }
+   }
+  },
+  "wall": {
+   "n_train": 10,
+   "methods": {
+    "adapt": {
+     "fixed": 0.0,
+     "per_geometry": 0.00053768712314195,
+     "break_even_M": 0.0
+    },
+    "adapt_warm": {
+     "fixed": 0.010332418023608625,
+     "per_geometry": 0.00045566162407340016,
+     "break_even_M": 125.96592694880992,
+     "fixed_note": "teacher ADAPT on training geometries"
+    },
+    "nn_refine": {
+     "fixed": 0.010332418023608625,
+     "per_geometry": 0.00022946362696529832,
+     "break_even_M": 33.522486610452376,
+     "fixed_note": "teacher ADAPT on training geometries"
+    }
+   }
+  }
+ },
+ "lih4": {
+  "evals": {
+   "n_train": 39,
+   "methods": {
+    "adapt": {
+     "fixed": 0.0,
+     "per_geometry": 154.64285714285714,
+     "break_even_M": 0.0
+    },
+    "adapt_warm": {
+     "fixed": 6261.0,
+     "per_geometry": 33.642857142857146,
+     "break_even_M": 51.743801652892564,
+     "fixed_note": "teacher ADAPT on training geometries"
+    },
+    "nn_refine": {
+     "fixed": 6261.0,
+     "per_geometry": 25.642857142857142,
+     "break_even_M": 48.53488372093023,
+     "fixed_note": "teacher ADAPT on training geometries"
+    }
+   }
+  },
+  "wall": {
+   "n_train": 39,
+   "methods": {
+    "adapt": {
+     "fixed": 0.0,
+     "per_geometry": 0.008337467179704358,
+     "break_even_M": 0.0
+    },
+    "adapt_warm": {
+     "fixed": 0.35235379105142783,
+     "per_geometry": 0.003868174001192009,
+     "break_even_M": 78.83881790200938,
+     "fixed_note": "teacher ADAPT on training geometries"
+    },
+    "nn_refine": {
+     "fixed": 0.35235379105142783,
+     "per_geometry": 0.003060400285383886,
+     "break_even_M": 66.77076453790158,
+     "fixed_note": "teacher ADAPT on training geometries"
+    }
+   }
+  }
+ },
+ "lih6": {
+  "evals": {
+   "n_train": 24,
+   "methods": {
+    "adapt": {
+     "fixed": 0.0,
+     "per_geometry": 248.52941176470588,
+     "break_even_M": 0.0
+    },
+    "adapt_warm": {
+     "fixed": 6129.0,
+     "per_geometry": 39.05882352941177,
+     "break_even_M": 29.259477674810448,
+     "fixed_note": "teacher ADAPT on training geometries"
+    },
+    "nn_refine": {
+     "fixed": 6129.0,
+     "per_geometry": 24.058823529411764,
+     "break_even_M": 27.30424528301887,
+     "fixed_note": "teacher ADAPT on training geometries"
+    }
+   }
+  },
+  "wall": {
+   "n_train": 24,
+   "methods": {
+    "adapt": {
+     "fixed": 0.0,
+     "per_geometry": 0.011638732941184357,
+     "break_even_M": 0.0
+    },
+    "adapt_warm": {
+     "fixed": 0.3131091679970268,
+     "per_geometry": 0.004466428881963058,
+     "break_even_M": 43.65531151659251,
+     "fixed_note": "teacher ADAPT on training geometries"
+    },
+    "nn_refine": {
+     "fixed": 0.3131091679970268,
+     "per_geometry": 0.003360713174676194,
+     "break_even_M": 37.82416288299135,
+     "fixed_note": "teacher ADAPT on training geometries"
+    }
+   }
+  }
+ },
+ "h4": {
+  "evals": {
+   "n_train": 35,
+   "methods": {
+    "adapt": {
+     "fixed": 0.0,
+     "per_geometry": 903.5909090909091,
+     "break_even_M": 0.0
+    },
+    "adapt_warm": {
+     "fixed": 32429.0,
+     "per_geometry": 186.27272727272728,
+     "break_even_M": 45.20866865217666,
+     "fixed_note": "teacher ADAPT on training geometries"
+    },
+    "nn_refine": {
+     "fixed": 32429.0,
+     "per_geometry": 76.0909090909091,
+     "break_even_M": 39.18912386706948,
+     "fixed_note": "teacher ADAPT on training geometries"
+    }
+   }
+  },
+  "wall": {
+   "n_train": 35,
+   "methods": {
+    "adapt": {
+     "fixed": 0.0,
+     "per_geometry": 0.09022531799961474,
+     "break_even_M": 0.0
+    },
+    "adapt_warm": {
+     "fixed": 3.299817660910776,
+     "per_geometry": 0.0453583409067836,
+     "break_even_M": 73.54669012096252,
+     "fixed_note": "teacher ADAPT on training geometries"
+    },
+    "nn_refine": {
+     "fixed": 3.299817660910776,
+     "per_geometry": 0.02049280672839483,
+     "break_even_M": 47.321078801770916,
+     "fixed_note": "teacher ADAPT on training geometries"
+    }
+   }
+  }
+ }
+}

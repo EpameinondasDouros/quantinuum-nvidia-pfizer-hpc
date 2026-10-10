@@ -6,6 +6,56 @@ Revision 2, Oct 10, 2026 · Udaya Vijay Anand · team of 3, each running multipl
 
 Supersedes the "miniature" plan of revision 1. Changes: full ADAPT-GQE architecture (Hamiltonian-conditioned transformer, operators + angles, SFT → GRPO → self-distillation) instead of an operator-only GRU; CCSD and FCI added as classical baselines, Hartree-Fock demoted; warm-started ADAPT and nearest-neighbour reuse added as the baselines that matter; resource-budgeted generation as the differentiator; amortised break-even accounting instead of the zero-gradient ratio; IonQ execution treated as a required measurement experiment; dependency pins and gate-count definitions corrected; prior-art statements corrected (the original paper does report gate counts and energy errors).
 
+## 0. Live status tracker (update this first, every time)
+
+This table is the source of truth for who is doing what. Before starting a task: set yourself as owner, set status to 🟨, and commit and push that one-line change straight away (`git commit -m "tracker: claim C1"`), so nobody else picks it up. When you finish, set ✅ and put the commit or branch in Where. If a task is 🟨 with someone else's name, don't start it; ask them or pick another.
+
+Status: ⬜ open · 🟨 in progress (claimed) · ✅ done, merged to main · 🔀 done on a branch, awaiting merge · ⛔ blocked (say on what)
+
+Branches: one per task or lane, named `feat/<short-name>`. Only merge to main after `pytest -q` passes and the end-to-end pipeline still runs. Never force-push main. Secrets (`IONQ_API_KEY`) go in a local `.env` (gitignored), never in commits.
+
+### P1 — must ship (without these there is no submission)
+
+| ID | Task | Owner | Status | Where | Notes |
+| --- | --- | --- | --- | --- | --- |
+| A1 | Hamiltonians for h2 (2q), lih4 (4q), lih6 (6q), h4 (8q) with HF / CCSD / FCI, geometry splits | Udaya | ✅ | main `3f621dc` | `scripts/make_hamiltonians.py`; built from PySCF CASCI integrals; 207 geometries |
+| A2 | Gate G1 chemistry: qubit-Hamiltonian sector ground state equals PySCF CASCI | Udaya | ✅ | main `tests/test_core.py` | Agrees to 1e-7 on all four systems |
+| B1 | ADAPT-VQE teacher labels with per-step cost logging | Udaya | ✅ | main `scripts/make_teacher.py` | All 207 converged and under 1.6 mHa (grad_tol 1e-4) |
+| B2 | Shared eval harness `genqai/evaluate.py` + baselines: UCCSD-VQE, fresh ADAPT, warm ADAPT, NN reuse, NN+refine | Udaya (agent) | ✅ | main `129743c` | `results/<system>/<method>.jsonl`. nn_refine and warm ADAPT hit 1.6 mHa on every test geometry with 10–30× fewer gradient evals than fresh ADAPT: this is the bar the model must beat |
+| B3 | Cross-check our ADAPT against `qiskit_algorithms.AdaptVQE` on h2 / lih4 | Udaya (agent) | ✅ | main `tests/test_baselines.py` | Agree within 1e-5 Ha |
+| C1 | Hamiltonian-conditioned transformer (operators + von Mises angle head), SFT, one-shot / refine / best-of-K | Udaya (agent) | 🟨 | `feat/model` | Budget-conditioning input built in for D3 |
+| E1 | Grouped Pauli measurement, finite-shot energy with error bars, local ideal + noisy | Udaya (agent) | ✅ | main `genqai/measure.py` | Exact-probability reconstruction = exact energy to 1e-9. Groups: h2 2, lih4 25, lih6 48, h4 46 |
+| E2 | Same experiment on IonQ simulator, ideal + noisy (forte-1 / aria-1), one job | Udaya (agent) | ✅ | main `scripts/run_ionq_demo.py` | Real jobs ran. h2 (4 CX): aria-1 21 ± 6 mHa, forte-1 28 ± 7 mHa. lih4 teacher (172 CX): ~460 mHa under noise, so shorter circuits matter. Results in `results/*/ionq_demo_*.json` |
+| E3 | Qollab runtime probe: Qiskit version, can we pip install, is PyTorch there, job/shot limits, noise models | open | ⬜ | | Needs a human logged into Qollab. Blocks F2 design |
+| F1 | Integrate branches to main; one-command end-to-end run (data → teacher → SFT → generate → score → IonQ) | Udaya | ⬜ | | Starts as soon as B2 + C1 land |
+| F2 | Judge-facing Qollab notebook: pick unseen geometry → generated circuit → energy vs FCI/HF/CCSD/ADAPT → IonQ run | open | ⬜ | | Depends on E3 answers |
+| F3 | Figures 1 (energy curve + residuals), 2 (one-shot vs optimised), 3 (accuracy vs CNOTs), 5 (break-even), 6 (IonQ ideal vs noisy), regenerable from `results/` | Udaya (agent) | ✅ | main `figures/` | `python scripts/make_figures.py`; also writes `figures/summary.md` (README table) and `breakeven.json`. Generator methods appear automatically once their EvalRecords exist. Fig 4 waits on training logs |
+| F4 | README, ATTRIBUTION.md (every reused component + licence), MIT licence | Udaya | 🟨 | main | LICENSE + README stub done; ATTRIBUTION open |
+| F5 | 150 s video recording a real run | open | ⬜ | | Human task |
+| F6 | Qollab project page, submission before Oct 11 7 PM ET | open | ⬜ | | Human task |
+
+### P2 — the research contribution (do after the P1 item it depends on)
+
+| ID | Task | Owner | Status | Where | Notes |
+| --- | --- | --- | --- | --- | --- |
+| D1 | GRPO on SFT policy, energy reward, KL to SFT, replay cache, separately evaluated checkpoint | Udaya (agent, queued) | ⬜ | | Starts after C1 |
+| D2 | Self-distillation round(s): SFT → SFT+GRPO → SFT+GRPO+distill, all scored on the frozen test set | open | ⬜ | | After D1 |
+| D3 | Budget-conditioned GRPO; energy-vs-CNOT frontier from one model vs ADAPT per budget | open | ⬜ | | The differentiator |
+| D4 | Break-even analysis (wall-clock and quantum-resource accounting), vs fresh and warm ADAPT; Figure 5 | open | ⬜ | | Needs B2 costs + C1 |
+| D5 | Figure 4: training evolution (held-out error and CNOTs per checkpoint for SFT / GRPO / distill) | open | ⬜ | | |
+| D6 | Ablations: Hamiltonian vs geometry-only conditioning; NN vs transformer; energy-only vs resource-aware reward | open | ⬜ | | Geometry-only flag built into C1 |
+| D7 | IonQ native 2-qubit gate counts (MS/ZZ) for generated vs ADAPT circuits | open | ⬜ | | Never relabel CX as native |
+
+### P3 — upside if time remains
+
+| ID | Task | Owner | Status | Where | Notes |
+| --- | --- | --- | --- | --- | --- |
+| X1 | Figure 7: learning curve (held-out error vs 10 / 20 / all training geometries) | open | ⬜ | | |
+| X2 | Several teacher runs per geometry (seeds / perturbed init) as extra labels | open | ⬜ | | Same split, not new independent examples |
+| X3 | Qubit-excitation or CEO pool as a controlled comparison teacher | open | ⬜ | | Never mixed into the primary teacher |
+| X4 | H₄ or LiH-6q on IonQ noisy simulator | open | ⬜ | | Check group count and shot budget first |
+| X5 | Tokenised-angle reference model (paper-faithful variant) | open | ⬜ | | |
+
 ## 1. What we are building
 
 A complete, small-scale reproduction of the Quantinuum–NVIDIA–Pfizer ADAPT-GQE architecture, plus one tested extension: a generator conditioned on a two-qubit-gate budget, so that it emits the cheapest circuit that meets an accuracy target for a new molecular geometry, in one shot, with no ADAPT search and no per-geometry VQE.
