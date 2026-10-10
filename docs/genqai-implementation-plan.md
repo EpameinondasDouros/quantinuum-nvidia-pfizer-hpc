@@ -24,8 +24,8 @@ Branches: one per task or lane, named `feat/<short-name>`. Only merge to main af
 | B2 | Shared eval harness `genqai/evaluate.py` + baselines: UCCSD-VQE, fresh ADAPT, warm ADAPT, NN reuse, NN+refine | Udaya (agent) | ✅ | main `129743c` | `results/<system>/<method>.jsonl`. nn_refine and warm ADAPT hit 1.6 mHa on every test geometry with 10–30× fewer gradient evals than fresh ADAPT: this is the bar the model must beat |
 | B3 | Cross-check our ADAPT against `qiskit_algorithms.AdaptVQE` on h2 / lih4 | Udaya (agent) | ✅ | main `tests/test_baselines.py` | Agree within 1e-5 Ha |
 | C1 | Hamiltonian-conditioned transformer (operators + von Mises angle head), SFT, one-shot / refine / best-of-K | Udaya (agent) | 🟨 | `feat/model` | Budget-conditioning input built in for D3 |
-| E1 | Grouped Pauli measurement, finite-shot energy with error bars, local ideal + noisy | Udaya (agent) | 🟨 | `feat/ionq` | |
-| E2 | Same experiment on IonQ simulator, ideal + noisy (forte-1 / aria-1), one job | Udaya (agent) | 🟨 | `feat/ionq` | Key in local `.env` |
+| E1 | Grouped Pauli measurement, finite-shot energy with error bars, local ideal + noisy | Udaya (agent) | ✅ | main `genqai/measure.py` | Exact-probability reconstruction = exact energy to 1e-9. Groups: h2 2, lih4 25, lih6 48, h4 46 |
+| E2 | Same experiment on IonQ simulator, ideal + noisy (forte-1 / aria-1), one job | Udaya (agent) | ✅ | main `scripts/run_ionq_demo.py` | Real jobs ran. h2 (4 CX): aria-1 21 ± 6 mHa, forte-1 28 ± 7 mHa. lih4 teacher (172 CX): ~460 mHa under noise, so shorter circuits matter. Results in `results/*/ionq_demo_*.json` |
 | E3 | Qollab runtime probe: Qiskit version, can we pip install, is PyTorch there, job/shot limits, noise models | open | ⬜ | | Needs a human logged into Qollab. Blocks F2 design |
 | F1 | Integrate branches to main; one-command end-to-end run (data → teacher → SFT → generate → score → IonQ) | Udaya | ⬜ | | Starts as soon as B2 + C1 land |
 | F2 | Judge-facing Qollab notebook: pick unseen geometry → generated circuit → energy vs FCI/HF/CCSD/ADAPT → IonQ run | open | ⬜ | | Depends on E3 answers |
