@@ -29,7 +29,7 @@ from genqai.circuits import build_circuit, gate_stats
 from genqai.data import DATA_DIR, load_hamiltonians, load_teacher
 from genqai.features import budget_vector, fit_featurizer
 from genqai.model import Cond, GQEPolicy, build_policy
-from genqai.rl import budget_cond, cnot_estimate, record_train_time
+from genqai.rl import RewardConfig, RewardModel, budget_val_set, cnot_estimate, greedy_eval, record_train_time
 from genqai.schema import GeneratedCircuit, load_jsonl
 from genqai.sim import Evaluator
 
@@ -71,9 +71,9 @@ def parse_args(argv=None):
     return p.parse_args(argv)
 
 
-def oneshot_errors(policy, records, cnot_budgets=None) -> tuple[list[float], list[bool]]:
-    """Greedy one-shot circuits (optionally CX-budget conditioned) -> exact energy error (mHa) per record."""
-    gen = policy.sample(budget_cond(policy, records, cnot_budgets), greedy=True)
+def oneshot_errors(policy, records) -> tuple[list[float], list[bool]]:
+    """Greedy one-shot circuits -> exact energy error (mHa) per record."""
+    gen = policy.sample(policy.condition(records), greedy=True)
     errs = [1000 * (Evaluator(r).energy(o, a) - r.fci_energy) for r, (o, a, _, _) in zip(records, gen)]
     return errs, [v for *_, v in gen]
 
@@ -129,9 +129,10 @@ def main(argv=None):
     own_budget = torch.from_numpy(np.stack(budgets)).to(dev)
     force = torch.tensor(force, device=dev)
     val_cond = policy.condition(val)
-    # budget-conditioned training is validated where it is used: conditioned on each VAL label's CX
-    val_budgets = ([cnot_estimate(a.system, teacher[r.geometry_id].operators) for r in val]
-                   if a.budget_targets else None)
+    if a.budget_targets:  # validated where it is used: VAL at several CX budgets, scored by the GRPO reward
+        cx_ref = {r.geometry_id: float(cnot_estimate(a.system, teacher[r.geometry_id].operators)) for r in val}
+        val_reward = RewardModel(val, RewardConfig(), cx_ref)
+        val_b_recs, val_budgets = budget_val_set(val, cx_ref)
     val_ops = [teacher[r.geometry_id].operators for r in val]
     val_angles = [teacher[r.geometry_id].angles for r in val]
 
@@ -170,7 +171,7 @@ def main(argv=None):
         policy.eval()
         with torch.no_grad():
             vl, vce, vang = (t.item() for t in nll(policy, val_cond, val_ops, val_angles, a.lambda_theta))
-        errs, valid = oneshot_errors(policy, val, val_budgets)
+        errs, valid = oneshot_errors(policy, val)
         ab = np.abs(errs)
         rec = {
             "epoch": epoch, "lr": sched.get_last_lr()[0], "train": np.mean(tot, 0).tolist(),
@@ -179,14 +180,20 @@ def main(argv=None):
             "val_max_abs_mha": float(ab.max()), "val_valid": float(np.mean(valid)),
             "elapsed_s": time.perf_counter() - t0,
         }
+        if a.budget_targets:
+            v = greedy_eval(policy, val_reward, val_b_recs, val_budgets)
+            rec.update({f"val_budget_{k}": x for k, x in v.items() if k != "circuits"})
         log["evals"].append(rec)
         print(
             f"ep {epoch:5d} loss {rec['train'][0]:8.3f} ce {rec['train'][1]:.4f} | val loss {vl:8.3f} ce {vce:.3f} "
             f"| val |err| mean {rec['val_mean_abs_mha']:.3f} med {rec['val_median_abs_mha']:.3f} "
-            f"max {rec['val_max_abs_mha']:.3f} mHa valid {rec['val_valid']:.2f} ({rec['elapsed_s']:.0f}s)",
+            f"max {rec['val_max_abs_mha']:.3f} mHa valid {rec['val_valid']:.2f} ({rec['elapsed_s']:.0f}s)"
+            + (f" | budgeted VAL score {rec['val_budget_score']:+.4f} |err| {rec['val_budget_mean_abs_mha']:.3f} "
+               f"cx {rec['val_budget_mean_cx']:.0f} in-budget {rec['val_budget_within_budget']:.2f}"
+               if a.budget_targets else ""),
             flush=True,
         )
-        key = (round(rec["val_mean_abs_mha"], 3), vl)
+        key = (-rec["val_budget_score"],) if a.budget_targets else (round(rec["val_mean_abs_mha"], 3), vl)
         if best_key is None or key < best_key:
             best_key, best, bad = key, copy.deepcopy(policy.state_dict()), 0
             log["best"] = rec

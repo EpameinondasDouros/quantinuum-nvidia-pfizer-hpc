@@ -11,6 +11,7 @@ compiled CX (gate_stats):
                   on the TRAIN ADAPT circuits truncated to k operators (angles from step k). 0 energy evals.
   regress_pruned  same regressor fitted on the TRAIN pruned canonical labels with n operators
                   (data/<system>/teacher_budget.jsonl; n = full is the canonical label). 0 energy evals.
+  regress_prefix  same, on the canonical n-operator prefixes (data/<system>/teacher_prefix.jsonl).
 Rows -> results/<system>/budget_frontier.jsonl (keys: curve, level, geometry_id, split, cnot_count,
 err_mha, n_ops, energy_evals, pool_gradient_evals; deliberately not EvalRecords).
 
@@ -53,10 +54,14 @@ def regression_banks(system, train):
             banks.setdefault(("regress_adapt", k), {})[r.geometry_id] = GeneratedCircuit(
                 r.geometry_id, system, [s["op"] for s in steps[:k]], steps[k - 1]["angles"])
     canon = load_teacher(system, "teacher_canonical")
-    for r in train:
-        banks.setdefault(("regress_pruned", len(canon[r.geometry_id].operators)), {})[r.geometry_id] = canon[r.geometry_id]
-    for c in load_jsonl(DATA_DIR / system / "teacher_budget.jsonl", GeneratedCircuit):
-        banks.setdefault(("regress_pruned", c.meta["n_ops"]), {})[c.geometry_id] = c
+    for curve, name in (("regress_pruned", "teacher_budget"), ("regress_prefix", "teacher_prefix")):
+        path = DATA_DIR / system / f"{name}.jsonl"
+        if not path.exists():
+            continue
+        for r in train:
+            banks.setdefault((curve, len(canon[r.geometry_id].operators)), {})[r.geometry_id] = canon[r.geometry_id]
+        for c in load_jsonl(path, GeneratedCircuit):
+            banks.setdefault((curve, c.meta["n_ops"]), {})[c.geometry_id] = c
     return banks
 
 

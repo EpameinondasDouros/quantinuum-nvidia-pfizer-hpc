@@ -508,6 +508,7 @@ FRONTIER_STYLE = {  # curve -> (color, marker, linestyle, label); regression com
     "adapt": (BASE_COLOR["adapt"], "o", "-", "ADAPT truncated at k ops (fresh run, re-optimised)"),
     "regress_adapt": (BASE_COLOR["angle_regression"], "s", "-", "angle KRR on ADAPT k-op prefixes (one-shot)"),
     "regress_pruned": (BASE_COLOR["angle_regression"], "D", "--", "angle KRR on pruned n-op labels (one-shot)"),
+    "regress_prefix": (BASE_COLOR["angle_regression"], "^", ":", "angle KRR on canonical n-op prefixes (one-shot)"),
 }
 FRONTIER_GROUPS = (("test (grid)", lambda s: s.startswith("test_") and s != "test_fresh"),
                    ("test_fresh", lambda s: s == "test_fresh"))

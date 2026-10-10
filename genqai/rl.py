@@ -235,6 +235,15 @@ class GRPOTrainer:
         }
 
 
+VAL_FRACTIONS = (0.5, 0.7, 0.85, 1.0)
+
+
+def budget_val_set(records, cx_ref: dict[str, float], fractions=VAL_FRACTIONS):
+    """(records, budgets): every record at each fraction of its reference CX (budget-mode validation)."""
+    return ([r for _ in fractions for r in records],
+            [f * cx_ref[r.geometry_id] for f in fractions for r in records])
+
+
 def greedy_eval(policy: GQEPolicy, reward: RewardModel, records, budgets=None) -> dict:
     """Greedy one-shot circuits scored with the reward (analytic CX). For checkpoint selection."""
     gen = policy.sample(budget_cond(policy, records, budgets), greedy=True)

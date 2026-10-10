@@ -25,8 +25,8 @@ import torch
 
 from genqai.data import load_hamiltonians, load_teacher
 from genqai.model import GQEPolicy
-from genqai.rl import (GRPOConfig, GRPOTrainer, ReplayDB, RewardConfig, RewardModel, cnot_estimate, greedy_eval,
-                       record_train_time)
+from genqai.rl import (VAL_FRACTIONS, GRPOConfig, GRPOTrainer, ReplayDB, RewardConfig, RewardModel,
+                       budget_val_set, cnot_estimate, greedy_eval, record_train_time)
 from genqai.schema import dump_jsonl
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -51,7 +51,7 @@ def parse_args(argv=None):
     p.add_argument("--budget", type=float, nargs=2, default=None, metavar=("LO", "HI"),
                    help="budget mode: per-group CX budget ~ U(LO, HI) x reference CX")
     p.add_argument("--budget-penalty", type=float, default=1.0)
-    p.add_argument("--val-fractions", type=float, nargs="+", default=[0.5, 0.7, 0.85, 1.0])
+    p.add_argument("--val-fractions", type=float, nargs="+", default=list(VAL_FRACTIONS))
     p.add_argument("--invalid-penalty", type=float, default=1.0)
     p.add_argument("--eval-every", type=int, default=10)
     p.add_argument("--seed", type=int, default=0)
@@ -81,8 +81,7 @@ def main(argv=None):
                            cnot_estimate(a.system, c.operators), "teacher_canonical")
 
     if a.budget:
-        val_recs = [r for f in a.val_fractions for r in val]
-        val_budgets = [f * cx_ref[r.geometry_id] for f in a.val_fractions for r in val]
+        val_recs, val_budgets = budget_val_set(val, cx_ref, a.val_fractions)
     else:
         val_recs, val_budgets = val, None
 
