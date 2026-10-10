@@ -7,17 +7,20 @@
 
 Everything is computed live. Two degraded modes, both labelled in the output:
 * no PySCF: off-grid geometries snap to the nearest stored geometry in data/<system>/hamiltonians.jsonl;
-* no torch: generation is replaced by a REPLAY of results/<system>/gen_oneshot.jsonl (grid geometries only).
+* no torch: generation runs live in NumPy from a genqai.infer_numpy export (checkpoints/<system>/<stage>.json,
+  as shipped in the qollab/ bundle); without an export it is a REPLAY of results/<system>/gen_oneshot.jsonl
+  (grid geometries only).
 """
 from __future__ import annotations
 
+import importlib.util
 import time
 from pathlib import Path
 
 import numpy as np
 
 from genqai.adapt import run_adapt
-from genqai.baselines import load_train_set, run_method
+from genqai.baselines import load_train_set, nearest_train, run_method
 from genqai.chemistry import SYSTEMS, build_record, geometry_id
 from genqai.data import load_hamiltonians
 from genqai.evaluate import score_circuit
@@ -67,32 +70,58 @@ def get_record(system: str, params) -> tuple[HamiltonianRecord, str]:
                       f"(split={near.split})")
 
 
+def training_context(record: HamiltonianRecord) -> dict:
+    """Where a geometry sits relative to the TRAINING geometries: inside the per-parameter training
+    range or not, and the nearest training geometry (Euclidean in the geometry parameters, Å)."""
+    train = load_hamiltonians(record.system, "train")
+    keys = list(record.geometry_params)
+    P = np.array([[r.geometry_params[k] for k in keys] for r in train])
+    x = np.array([record.geometry_params[k] for k in keys])
+    nb = nearest_train(record, train)
+    return {"inside_range": bool(np.all((x >= P.min(0)) & (x <= P.max(0)))),
+            "range": {k: (float(lo), float(hi)) for k, lo, hi in zip(keys, P.min(0), P.max(0))},
+            "nearest": nb.geometry_params,
+            "distance": float(np.linalg.norm(np.array([nb.geometry_params[k] for k in keys]) - x))}
+
+
 def discover_checkpoints(system: str) -> dict[str, Path]:
-    """{stage name: path} for every checkpoints/<system>/*.pt (sft, grpo, distill, ... whichever exist)."""
-    paths = {p.stem: p for p in sorted((ROOT / "checkpoints" / system).glob("*.pt"))}
+    """{stage name: path} for every checkpoints/<system>/*.pt (sft, grpo, distill, ... whichever exist).
+
+    NumPy exports checkpoints/<system>/<stage>.json (genqai.infer_numpy) stand in for a stage whose .pt
+    is absent, and replace it whenever torch is not installed.
+    """
+    d = ROOT / "checkpoints" / system
+    pts, exports = ({p.stem: p for p in sorted(d.glob(g))} for g in ("*.pt", "*.json"))
+    paths = {**exports, **pts} if torch_available() else {**pts, **exports}
     return {k: paths[k] for k in sorted(paths, key=lambda k: (CKPT_ORDER.index(k) if k in CKPT_ORDER else 99, k))}
 
 
 def torch_available() -> bool:
-    try:
-        import torch  # noqa: F401
-    except ImportError:
-        return False
-    return True
+    return importlib.util.find_spec("torch") is not None  # without importing it
 
 
 def generate_oneshot(record: HamiltonianRecord, ckpt: Path) -> tuple[GeneratedCircuit, dict]:
-    """Greedy one-shot generation: 1 model call, 0 energy evaluations. Falls back to a replay."""
-    if torch_available():
-        from genqai.model import GQEPolicy
+    """Greedy one-shot generation: 1 model call, 0 energy evaluations. Falls back to a replay.
 
-        policy = GQEPolicy.load(ckpt)
+    ckpt: a torch checkpoint (.pt) or its NumPy export (.json, genqai.infer_numpy; no torch needed).
+    """
+    if ckpt.suffix == ".json" or torch_available():
         t0 = time.perf_counter()
-        ops, angles, logp, valid = policy.sample(policy.condition([record]), greedy=True)[0]
+        if ckpt.suffix == ".json":
+            from genqai.infer_numpy import NumpyPolicy
+
+            ops, angles, valid = NumpyPolicy.load(ckpt).generate(record)
+            mode, meta = "live (NumPy transformer)", {}
+        else:
+            from genqai.model import GQEPolicy
+
+            policy = GQEPolicy.load(ckpt)
+            ops, angles, logp, valid = policy.sample(policy.condition([record]), greedy=True)[0]
+            mode, meta = "live", {"logprob": logp}
         dt = time.perf_counter() - t0
         circ = GeneratedCircuit(record.geometry_id, record.system, ops, angles, valid,
-                                source=f"{ckpt.stem}_oneshot", meta={"logprob": logp})
-        return circ, {"mode": "live", "runtime_s": dt, "checkpoint": str(ckpt.relative_to(ROOT))}
+                                source=f"{ckpt.stem}_oneshot", meta=meta)
+        return circ, {"mode": mode, "runtime_s": dt, "checkpoint": str(ckpt.relative_to(ROOT))}
     # replay files are what scripts/generate.py writes (--tag _<stage> for non-SFT checkpoints)
     replay = ROOT / "results" / record.system / ("gen_oneshot.jsonl" if ckpt.stem == "sft" else f"gen_oneshot_{ckpt.stem}.jsonl")
     bank = {c.geometry_id: c for c in load_jsonl(replay, GeneratedCircuit)} if replay.exists() else {}
@@ -127,17 +156,22 @@ def compare(record: HamiltonianRecord, gens: dict[str, tuple[GeneratedCircuit, d
     Baselines: HF, CCSD, FCI (from the record); sign-corrected nearest-neighbour reuse/refine and
     kernel-ridge angle regression, which read TRAINING labels only (genqai.baselines); and optionally
     a fresh ADAPT-VQE run with the teacher's settings.
+    A baseline that fails (e.g. a missing optional package) is reported and skipped.
     """
     train = load_train_set(record.system)
     evals = [run_method(m, record, train) for m in ("hf", "ccsd", "fci")]
     for circ, info in gens.values():
         evals.append(score_circuit(record, circ, circ.source, model_forward_passes=1, runtime_s=info["runtime_s"]))
-    for m in ("nn_reuse_gauge", "angle_regression", "nn_refine_canon"):
-        evals.append(run_method(m, record, train))
-    if live_adapt:
-        settings = next(iter(train.bank.values())).meta
-        own = run_adapt(record, max_ops=settings["max_ops"], grad_tol=settings["grad_tol"])
-        evals.append(run_method("adapt", record, train, own_teacher=own))
+    for m in ("nn_reuse_gauge", "angle_regression", "nn_refine_canon") + (("adapt",) if live_adapt else ()):
+        try:
+            if m == "adapt":
+                settings = next(iter(train.bank.values())).meta
+                own = run_adapt(record, max_ops=settings["max_ops"], grad_tol=settings["grad_tol"])
+                evals.append(run_method(m, record, train, own_teacher=own))
+            else:
+                evals.append(run_method(m, record, train))
+        except Exception as exc:
+            print(f"[{m}] skipped: {type(exc).__name__}: {exc}")
     return evals
 
 

@@ -11,6 +11,8 @@ from genqai.measure import (
     compile_state,
     exact_probabilities,
     measure_energy,
+    measure_on_backend,
+    result_counts,
     submit_ionq,
 )
 from genqai.schema import GeneratedCircuit, load_jsonl
@@ -119,3 +121,26 @@ def test_collect_ionq_parses_result(case):
     assert abs(est.energy - exact) < 1e-9
     noisy = plan.estimate(collect_ionq(FakeResult(), plan.num_groups, exact=False))
     assert np.isfinite(noisy.stderr) and noisy.total_shots > 0
+
+
+def test_result_counts_list_form():
+    class ListResult:  # provider whose get_counts(i) fails and get_counts() returns a list
+        def get_counts(self, i=None):
+            if i is not None:
+                raise KeyError(i)
+            return [{"00": 3}, {"11": 5}]
+
+    assert result_counts(ListResult(), 2) == [{"00": 3}, {"11": 5}]
+    with pytest.raises(ValueError):
+        result_counts(ListResult(), 3)
+
+
+def test_measure_on_injected_backend(case):
+    """The Qollab path: one backend.run(list) on a ready-made backend (BasicSimulator here)."""
+    from qiskit.providers.basic_provider import BasicSimulator
+
+    rec, c = case
+    est = measure_on_backend(rec, c.operators, c.angles, BasicSimulator(), shots_per_group=20_000)
+    exact = Evaluator(rec).energy(c.operators, c.angles)
+    assert est.backend == "basic_simulator" and est.total_shots == 20_000 * est.num_groups
+    assert abs(est.energy - exact) < 5 * est.stderr + 1e-9
