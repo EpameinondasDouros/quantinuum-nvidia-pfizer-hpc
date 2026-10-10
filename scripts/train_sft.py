@@ -1,6 +1,7 @@
 """Supervised imitation of the ADAPT teacher (Workstream C).
 
-Targets are complete teacher circuits (operators + angles) on TRAIN geometries. Checkpoint
+Targets are complete teacher circuits (operators + angles) on TRAIN geometries: raw ADAPT, or
+(default) the canonicalised ADAPT labels from scripts/make_canonical_teacher.py. Checkpoint
 selection uses VAL one-shot accuracy: greedy generation -> exact energy -> mean |error| (mHa),
 ties broken by VAL teacher-forced loss.
 
@@ -31,6 +32,9 @@ def parse_args(argv=None):
     p = argparse.ArgumentParser()
     p.add_argument("--system", required=True)
     p.add_argument("--cond", default="hamiltonian", choices=["hamiltonian", "geometry"])
+    p.add_argument("--no-gauge", action="store_true", help="disable orbital-phase gauge fixing")
+    p.add_argument("--targets", default="teacher_canonical", choices=["teacher", "teacher_canonical"],
+                   help="raw ADAPT circuits or canonicalised ones (scripts/make_canonical_teacher.py)")
     p.add_argument("--epochs", type=int, default=3000)
     p.add_argument("--batch-size", type=int, default=16)
     p.add_argument("--lr", type=float, default=1e-3)
@@ -76,16 +80,17 @@ def main(argv=None):
     rng = np.random.default_rng(a.seed)
     dev = torch.device(a.device)
 
-    teacher = load_teacher(a.system)
+    teacher = load_teacher(a.system, a.targets)
     train = load_hamiltonians(a.system, "train")
     val = load_hamiltonians(a.system, "val")
-    feat = fit_featurizer(a.system, a.cond)
+    feat = fit_featurizer(a.system, a.cond, gauge=not a.no_gauge)
     policy = build_policy(
         a.system, feat, d_model=a.d_model, n_layers=a.layers, n_heads=a.heads, d_ff=a.ffn,
         dropout=a.dropout, n_mix=a.n_mix, enc_blocks=a.enc_blocks,
     ).to(dev)
 
     X = torch.from_numpy(feat(train)).to(dev)
+    op_sign = torch.from_numpy(feat.op_signs(train)).to(dev)
     ops = [teacher[r.geometry_id].operators for r in train]
     angles = [teacher[r.geometry_id].angles for r in train]
     own_budget = torch.from_numpy(np.stack([
@@ -118,7 +123,8 @@ def main(argv=None):
                 x = x + a.coef_noise * torch.randn_like(x)
             use = torch.from_numpy(rng.random(len(idx)) < a.budget_prob).to(dev)[:, None]
             budget = torch.where(use, own_budget[idx], torch.zeros_like(own_budget[idx]))
-            loss, ce, ang = nll(policy, Cond(x, budget), [ops[j] for j in idx], [angles[j] for j in idx], a.lambda_theta)
+            cond = Cond(x, budget, op_sign[idx])
+            loss, ce, ang = nll(policy, cond, [ops[j] for j in idx], [angles[j] for j in idx], a.lambda_theta)
             opt.zero_grad()
             loss.backward()
             torch.nn.utils.clip_grad_norm_(policy.parameters(), 1.0)

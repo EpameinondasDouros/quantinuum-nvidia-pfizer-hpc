@@ -11,6 +11,8 @@ Hamiltonian, autoregressively:
   and is also added to every position.
 * Decoder: causal pre-LN transformer. Input at step t = op_emb(o_{t-1}) + W [sin θ_{t-1}, cos θ_{t-1}]
   + learned position + c.
+* Gauge: angles are modelled in the orbital-phase-fixed frame of genqai.features; ``Cond.op_sign``
+  maps them to/from the record's own frame, so callers only ever see original-frame angles.
 * Heads: categorical over pool ops + EOS (index ``policy.eos == n_ops``); angle head = mixture of
   K von Mises conditioned on the hidden state AND the chosen op's embedding. Angles are periodic
   everywhere (sin/cos inputs, von Mises likelihood, outputs wrapped to (-π, π]).
@@ -67,14 +69,15 @@ class ModelConfig:
 
 @dataclass
 class Cond:
-    x: torch.Tensor  # [B, cond_dim] standardised features
+    x: torch.Tensor  # [B, cond_dim] standardised (gauge-fixed) features
     budget: torch.Tensor  # [B, BUDGET_DIM]
+    op_sign: torch.Tensor  # [B, n_ops] ±1: theta_original = op_sign[op] * theta_model
 
     def __len__(self) -> int:
         return self.x.shape[0]
 
     def expand(self, n: int) -> "Cond":
-        return Cond(self.x.expand(n, -1), self.budget.expand(n, -1))
+        return Cond(self.x.expand(n, -1), self.budget.expand(n, -1), self.op_sign.expand(n, -1))
 
 
 def von_mises_mixture_logpdf(theta, logit_w, mu, log_kappa):
@@ -136,7 +139,8 @@ class GQEPolicy(nn.Module):
     def condition(self, records: list[HamiltonianRecord], max_ops: int | None = None, cnot_budget: int | None = None) -> Cond:
         x = torch.from_numpy(self.featurizer(records)).to(self.device)
         b = torch.from_numpy(budget_vector(max_ops, cnot_budget)).to(self.device).expand(len(records), -1)
-        return Cond(x, b.clone())
+        sign = torch.from_numpy(self.featurizer.op_signs(records)).to(self.device)
+        return Cond(x, b.clone(), sign)
 
     def _embed_cond(self, cond: Cond) -> torch.Tensor:
         return self.encoder(cond.x) + self.budget_proj(cond.budget)
@@ -182,6 +186,7 @@ class GQEPolicy(nn.Module):
                 tgt[b, n] = self.eos
         op_mask = tgt >= 0
         ang_mask = op_mask & (tgt != self.eos)
+        ang = ang * cond.op_sign.gather(1, tgt.clamp(0, self.cfg.n_ops - 1))  # -> model gauge
         op_in = tgt[:, : P - 1].clamp(0, self.cfg.n_ops - 1)
         h = self._hidden(self._embed_cond(cond), op_in, ang[:, : P - 1])
         logp = F.log_softmax(self.op_head(h), -1)
@@ -241,9 +246,10 @@ class GQEPolicy(nn.Module):
         out = []
         for b in range(B):
             n_b = int(length[b])
+            sign = cond.op_sign[b, ops[b, :n_b]]
             out.append((
                 ops[b, :n_b].tolist(),
-                [wrap_angle(a) for a in angles[b, :n_b].tolist()],
+                [wrap_angle(a) for a in (sign * angles[b, :n_b]).tolist()],
                 float(lp[b]),
                 bool(n_b < L),
             ))

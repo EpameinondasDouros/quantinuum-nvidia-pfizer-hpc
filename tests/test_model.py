@@ -67,3 +67,26 @@ def test_checkpoint_roundtrip(setup, tmp_path):
     b = loaded.sample(loaded.condition(recs), greedy=True)
     assert [x[0] for x in a] == [x[0] for x in b]
     assert np.allclose([x[2] for x in a], [x[2] for x in b], atol=1e-4)
+
+
+def test_gauge_fixing_is_exact_symmetry():
+    """E_{H_fixed}(ops, theta_model) == E_H(ops, op_sign * theta_model)."""
+    import dataclasses
+
+    from genqai.sim import Evaluator
+
+    f = fit_featurizer("h4")
+    recs = load_hamiltonians("h4")
+    signs = f.op_signs(recs)
+    flipped = [i for i, s in enumerate(signs) if (s < 0).any()]
+    assert flipped, "expected some h4 geometries in a non-reference orbital gauge"
+    rng = np.random.default_rng(0)
+    for i in flipped[:2]:
+        r = recs[i]
+        terms = [{"pauli": k, "coefficient": float(c)} for k, c in zip(f.keys, f.raw(r))]
+        fixed = dataclasses.replace(r, pauli_terms=terms)
+        ops = list(rng.integers(0, len(signs[i]), 10))
+        theta = rng.uniform(-1, 1, 10)
+        e_fixed = Evaluator(fixed).energy(ops, theta)
+        e_orig = Evaluator(r).energy(ops, signs[i][ops] * theta)
+        assert abs(e_fixed - e_orig) < 1e-10

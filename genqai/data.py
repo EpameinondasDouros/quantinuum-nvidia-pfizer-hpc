@@ -73,6 +73,6 @@ def load_hamiltonians(system: str, split: str | None = None) -> list[Hamiltonian
     return [r for r in recs if r.split == split or (split == "test" and r.split.startswith("test"))]
 
 
-def load_teacher(system: str) -> dict[str, GeneratedCircuit]:
-    """ADAPT teacher circuits keyed by geometry_id."""
-    return {c.geometry_id: c for c in load_jsonl(DATA_DIR / system / "teacher.jsonl", GeneratedCircuit)}
+def load_teacher(system: str, variant: str = "teacher") -> dict[str, GeneratedCircuit]:
+    """Teacher circuits keyed by geometry_id: "teacher" (raw ADAPT) or "teacher_canonical"."""
+    return {c.geometry_id: c for c in load_jsonl(DATA_DIR / system / f"{variant}.jsonl", GeneratedCircuit)}
