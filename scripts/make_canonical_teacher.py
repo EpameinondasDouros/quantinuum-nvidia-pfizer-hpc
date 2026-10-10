@@ -8,7 +8,7 @@ with a complete, exactly re-optimised circuit that is chemically accurate AND va
 1. Canonical order: operators sorted by (occurrence index, global rank), where the global rank is
    the mean first-occurrence position of each operator across TRAIN teacher sequences.
 2. Continuation over TRAIN geometries along a minimum spanning tree in standardised geometry
-   space (Prim order, starting from the smallest parameters): each geometry is warm-started from
+   space (Prim order, rooted at the smallest or, with --start max, largest parameters): each geometry is warm-started from
    its nearest already-labelled TRAIN neighbour. Candidates, all BFGS-optimised exactly:
      A. neighbour's canonical sequence, neighbour's angles
      B. own ADAPT operators (canonical order), neighbour's angles matched by (op, occurrence)
@@ -55,15 +55,16 @@ def canonical_order(ops, rank):
     return sorted(range(len(ops)), key=lambda i: (keys[i][1], rank.get(ops[i], 1e9), i))
 
 
-def anchored_minimize(ev, ops, init, mu):
-    """argmin E(x) + mu * |x - init|^2 (BFGS, exact gradients). Where the energy has flat valleys
-    (redundant parameters), the anchor picks the minimiser closest to the warm start, which keeps
-    labels continuous along the continuation path. Returns (x, true energy E(x))."""
+def anchored_minimize(ev, ops, init, mu, anchor=None):
+    """argmin E(x) + mu * |x - anchor|^2 (BFGS from init, exact gradients; anchor defaults to init).
+    Where the energy has flat valleys (redundant parameters), the anchor picks the minimiser closest
+    to it, which keeps labels continuous. Returns (x, true energy E(x))."""
     x0 = np.array(init, float)
+    xa = x0 if anchor is None else np.asarray(anchor, float)
 
     def f(x):
         e, g = ev.energy_and_grad(ops, x)
-        d = x - x0
+        d = x - xa
         return e + mu * d @ d, g + 2 * mu * d
 
     res = minimize(f, x0, jac=True, method="BFGS", options={"gtol": 1e-8, "maxiter": 2000})
@@ -99,12 +100,52 @@ def relabel(rec, teacher, neighbour, rank, tol, mu, flip=None, prefer="short"):
     )
 
 
+def smooth(labels, train, S, dist, sweeps, mu, tol):
+    """Pull each TRAIN label towards the mean of its same-sequence TRAIN neighbours (within 1.6x its
+    nearest-neighbour distance) by minimising E + mu |x - mean|^2; a move is kept only if the true
+    error stays below tol. Gives the smoothest chemically accurate label field we can cheaply find."""
+    ids = list(train)
+    near = {}
+    for g in ids:
+        d = {h: dist(g, h) for h in ids if h != g}
+        dmin = min(d.values())
+        near[g] = [h for h, v in d.items() if v <= 1.6 * dmin + 1e-9]
+
+    def target(g):
+        nbs = [h for h in near[g] if labels[h].operators == labels[g].operators]
+        if not nbs:
+            return None
+        return np.mean([[S[g][o] * S[h][o] * t for o, t in zip(labels[h].operators, labels[h].angles)] for h in nbs], 0)
+
+    def roughness():
+        r = [np.linalg.norm(np.array(labels[g].angles) - t) for g in ids if (t := target(g)) is not None]
+        return float(np.mean(r))
+
+    if sweeps:
+        print(f"label roughness before smoothing {roughness():.4f} rad")
+    for _ in range(sweeps):
+        for g in ids:
+            t = target(g)
+            if t is None:
+                continue
+            lab, rec = labels[g], train[g]
+            x, e = anchored_minimize(Evaluator(rec), lab.operators, lab.angles, mu, anchor=t)
+            err = 1000 * (e - rec.fci_energy)
+            if err < tol:
+                lab.angles = [wrap_angle(v) for v in x]
+                lab.meta.update(energy=e, error_mha=err, smoothed=True)
+        print(f"  sweep roughness {roughness():.4f} rad")
+
+
 def main(argv=None):
     p = argparse.ArgumentParser()
     p.add_argument("--system", required=True)
     p.add_argument("--tol", type=float, default=1.0, help="accept a relabel only below this error (mHa)")
     p.add_argument("--mu", type=float, default=1e-4, help="anchor strength (Ha/rad^2)")
     p.add_argument("--prefer", default="short", choices=["short", "neighbour"])
+    p.add_argument("--start", default="min", choices=["min", "max"], help="continuation root: smallest or largest geometry")
+    p.add_argument("--smooth-sweeps", type=int, default=0, help="Laplacian smoothing sweeps over TRAIN labels")
+    p.add_argument("--smooth-mu", type=float, default=1e-3, help="smoothing pull strength (Ha/rad^2)")
     p.add_argument("--out", default="teacher_canonical", help="output name under data/<system>/")
     a = p.parse_args(argv)
 
@@ -125,7 +166,7 @@ def main(argv=None):
     dist = lambda g, h: float(np.linalg.norm((P[g] - P[h]) / sd))  # noqa: E731
 
     labels: dict[str, GeneratedCircuit] = {}
-    todo = sorted(train, key=lambda r: tuple(P[r.geometry_id]))
+    todo = sorted(train, key=lambda r: tuple(P[r.geometry_id]), reverse=a.start == "max")
     first = todo.pop(0)
     labels[first.geometry_id] = relabel(first, teacher[first.geometry_id], None, rank, a.tol, a.mu, prefer=a.prefer)
     while todo:  # Prim: attach the unlabelled train geometry closest to the labelled set
@@ -136,6 +177,7 @@ def main(argv=None):
         r = todo.pop(j)
         labels[r.geometry_id] = relabel(r, teacher[r.geometry_id], labels[nb], rank, a.tol, a.mu, S[r.geometry_id] * S[nb], a.prefer)
     train_ids = list(labels)
+    smooth(labels, {r.geometry_id: r for r in train}, S, dist, a.smooth_sweeps, a.smooth_mu, a.tol)
     for r in recs:
         if r.split != "train":
             nb = min(train_ids, key=lambda g: dist(r.geometry_id, g))
