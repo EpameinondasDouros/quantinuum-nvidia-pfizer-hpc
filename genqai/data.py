@@ -23,6 +23,11 @@ from genqai.schema import GeneratedCircuit, HamiltonianRecord, dump_jsonl, load_
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
 
+def results_dir(fresh: bool = False) -> Path:
+    """results/ for the grid splits; results_fresh/ for test_fresh, so old aggregates never mix with it."""
+    return DATA_DIR.parent / ("results_fresh" if fresh else "results")
+
+
 def geometry_grid(system: str) -> list[tuple[float, ...]]:
     if system == "h2":
         return [(r,) for r in np.round(np.linspace(0.5, 2.5, 21), 4)]

@@ -22,7 +22,7 @@ from matplotlib.lines import Line2D  # noqa: E402
 from matplotlib.patches import Patch  # noqa: E402
 
 from genqai.baselines import METHODS  # noqa: E402
-from genqai.data import load_hamiltonians  # noqa: E402
+from genqai.data import FRESH_SPLIT, hamiltonians_path, load_hamiltonians  # noqa: E402
 from genqai.evaluate import summarize  # noqa: E402
 from genqai.schema import EvalRecord, load_jsonl  # noqa: E402
 
@@ -39,11 +39,16 @@ BAND = "#e4eefb"  # chemical-accuracy band: a pale wash of the blue ramp
 BASE_COLOR = {
     "fci": INK, "hf": MUTED, "ccsd": "#008300",
     "adapt": "#2a78d6", "adapt_warm": "#1baf7a", "nn_reuse": "#eda100", "nn_refine": "#e87ba4",
-    "uccsd_vqe": "#6250d6",
+    "uccsd_vqe": "#6250d6", "nn_reuse_gauge": "#b07c00", "nn_refine_gauge": "#c2508a",
+    "nn_reuse_canon": "#7a5600", "nn_refine_canon": "#93306a", "angle_regression": "#0b8a8a",
+    "angle_interp": "#5aa9a9",
 }
 BASE_LABEL = {
     "fci": "FCI", "hf": "HF", "ccsd": "CCSD", "adapt": "ADAPT (fresh)", "adapt_warm": "ADAPT (warm)",
-    "nn_reuse": "NN reuse", "nn_refine": "NN refine", "uccsd_vqe": "UCCSD-VQE",
+    "nn_reuse": "NN reuse (naive)", "nn_refine": "NN refine (naive)", "uccsd_vqe": "UCCSD-VQE",
+    "nn_reuse_gauge": "NN reuse (sign-fixed)", "nn_refine_gauge": "NN refine (sign-fixed)",
+    "nn_reuse_canon": "NN reuse (canonical)", "nn_refine_canon": "NN refine (canonical)",
+    "angle_regression": "Angle KRR", "angle_interp": "Angle interp",
 }
 # generator: hue by inference mode (warm family), marker by training family
 GEN_MODE_COLOR = {"oneshot": "#eb6834", "refine": "#e34948", "bestofk": "#a8431c"}
@@ -96,7 +101,11 @@ def load_results(results_dir: Path, system: str) -> dict[str, list[EvalRecord]]:
 
 
 def geometry_params(system: str) -> dict[str, dict[str, float]]:
-    return {h.geometry_id: h.geometry_params for h in load_hamiltonians(system)}
+    """Grid geometries plus, when built, the test_fresh ones (results_fresh/ figures)."""
+    recs = load_hamiltonians(system)
+    if hamiltonians_path(system, fresh=True).exists():
+        recs += load_hamiltonians(system, FRESH_SPLIT)
+    return {h.geometry_id: h.geometry_params for h in recs}
 
 
 def train_logs(results_dir: Path, system: str) -> dict[str, dict]:
