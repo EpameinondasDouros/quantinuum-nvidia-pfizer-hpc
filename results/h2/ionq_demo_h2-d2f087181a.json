@@ -1,0 +1,220 @@
+{
+ "geometry_id": "h2-d2f087181a",
+ "system": "h2",
+ "geometry_params": {
+  "r": 0.8
+ },
+ "split": "test_interp",
+ "fci_energy": -1.1341476666770964,
+ "circuit": {
+  "source": "adapt",
+  "file": "/Users/udsy/PycharmProjects/qollab-hack-GenQAI/.claude/worktrees/agent-a40055ddc2b3cc767/data/h2/teacher.jsonl",
+  "operators": [
+   2
+  ],
+  "angles": [
+   -0.1255223315898233
+  ]
+ },
+ "num_groups": 2,
+ "qiskit_gate_stats": {
+  "cnot_count": 4,
+  "depth": 15,
+  "num_gates": 22
+ },
+ "ionq_native_stats": {
+  "aria-1": {
+   "device": "aria-1",
+   "native_2q_gate": "ms",
+   "native_2q_count": 4,
+   "native_1q_count": 70,
+   "native_depth": 45
+  },
+  "forte-1": {
+   "device": "forte-1",
+   "native_2q_gate": "zz",
+   "native_2q_count": 4,
+   "native_1q_count": 102,
+   "native_depth": 67
+  }
+ },
+ "shots_requested": 2000,
+ "runs": [
+  {
+   "energy": -1.1341476666770949,
+   "stderr": 0.0,
+   "num_groups": 0,
+   "total_shots": 0,
+   "shots_per_group": [],
+   "group_means": [],
+   "group_stderrs": [],
+   "backend": "exact",
+   "meta": {
+    "label": "exact"
+   },
+   "error_mha": 1.5543122344752192e-12
+  },
+  {
+   "energy": -1.134147666677095,
+   "stderr": 0.0,
+   "num_groups": 2,
+   "total_shots": 0,
+   "shots_per_group": [
+    0,
+    0
+   ],
+   "group_means": [
+    -0.04586424913225604,
+    -0.6865421340839695
+   ],
+   "group_stderrs": [
+    0.0,
+    0.0
+   ],
+   "backend": "exact_probs",
+   "meta": {
+    "allocation": "uniform",
+    "predicted_stderr_at_shots": {
+     "shots": 2000,
+     "stderr": 0.007997939716518415
+    },
+    "label": "exact_probs"
+   },
+   "error_mha": 1.3322676295501878e-12
+  },
+  {
+   "energy": -1.1357787814635454,
+   "stderr": 0.00791299784408571,
+   "num_groups": 2,
+   "total_shots": 2000,
+   "shots_per_group": [
+    1000,
+    1000
+   ],
+   "group_means": [
+    -0.046525949456127313,
+    -0.6875115485465485
+   ],
+   "group_stderrs": [
+    0.0056528169590953,
+    0.005537255214225698
+   ],
+   "backend": "local_shots",
+   "meta": {
+    "allocation": "uniform",
+    "label": "local_shots"
+   },
+   "error_mha": -1.6311147864489506
+  },
+  {
+   "energy": -1.1231215933595304,
+   "stderr": 0.008560852555781677,
+   "num_groups": 2,
+   "total_shots": 2000,
+   "shots_per_group": [
+    1000,
+    1000
+   ],
+   "group_means": [
+    -0.0513262458285849,
+    -0.670054064070076
+   ],
+   "group_stderrs": [
+    0.005611073858473566,
+    0.006465604893325004
+   ],
+   "backend": "local_noisy",
+   "meta": {
+    "allocation": "uniform",
+    "noise_model": {
+     "name": "genqai_trapped_ion_depolarizing (OUR approximation, not IonQ)",
+     "p1": 0.0005,
+     "p2": 0.006,
+     "readout": 0.005
+    },
+    "label": "local_noisy"
+   },
+   "error_mha": 11.026073317565999
+  },
+  {
+   "energy": -1.1336004409348088,
+   "stderr": 0.0,
+   "num_groups": 2,
+   "total_shots": 0,
+   "shots_per_group": [
+    0,
+    0
+   ],
+   "group_means": [
+    -0.04578744707589624,
+    -0.686071710398043
+   ],
+   "group_stderrs": [
+    0.0,
+    0.0
+   ],
+   "backend": "ionq_ideal",
+   "meta": {
+    "allocation": "uniform",
+    "ionq_job_id": "01a127d1-9023-7598-9ecb-c1889662eaf9",
+    "ionq_noise_model": "ideal",
+    "note": "IonQ ideal sim: exact probabilities rounded to 1e-3, stderr=0",
+    "probability_rounding_bound_ha": 0.0018307107349708667,
+    "label": "ionq_ideal"
+   },
+   "error_mha": 0.5472257422876048
+  },
+  {
+   "energy": -1.1143291199218224,
+   "stderr": 0.008960546777664027,
+   "num_groups": 2,
+   "total_shots": 2000,
+   "shots_per_group": [
+    1000,
+    1000
+   ],
+   "group_means": [
+    -0.04209490665078186,
+    -0.6704929298101711
+   ],
+   "group_stderrs": [
+    0.005687478831237462,
+    0.006924159378504436
+   ],
+   "backend": "ionq_noisy",
+   "meta": {
+    "allocation": "uniform",
+    "ionq_job_id": "01a127d1-a809-7166-a7e1-91045150538b",
+    "ionq_noise_model": "aria-1",
+    "label": "ionq_noisy/aria-1"
+   },
+   "error_mha": 19.818546755274056
+  },
+  {
+   "energy": -1.1276728710483102,
+   "stderr": 0.008637593697131105,
+   "num_groups": 2,
+   "total_shots": 2000,
+   "shots_per_group": [
+    1000,
+    1000
+   ],
+   "group_means": [
+    -0.04911072442591216,
+    -0.6768208631615285
+   ],
+   "group_stderrs": [
+    0.005630887394138165,
+    0.006549895574072527
+   ],
+   "backend": "ionq_noisy",
+   "meta": {
+    "allocation": "uniform",
+    "ionq_job_id": "01a127d1-c01e-72a7-baa3-95961ab9e8c1",
+    "ionq_noise_model": "forte-1",
+    "label": "ionq_noisy/forte-1"
+   },
+   "error_mha": 6.4747956287862785
+  }
+ ]
+}

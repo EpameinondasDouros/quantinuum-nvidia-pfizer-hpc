@@ -6,3 +6,4 @@ __pycache__/
 runs/tmp/
 .DS_Store
 .env
+.claude/
