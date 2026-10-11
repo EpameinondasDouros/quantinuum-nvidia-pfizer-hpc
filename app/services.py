@@ -115,6 +115,8 @@ def viewer_html(atoms, width: int = 520, height: int = 320) -> str | None:
     v.addModel(xyz_text(atoms), "xyz")
     v.setStyle({"stick": {"radius": 0.12}, "sphere": {"scale": 0.28}})
     v.zoomTo()
+    v.rotate(-60, "x")  # oblique camera: presets lie along z, which the default view looks straight down
+    v.rotate(30, "y")
     return v._make_html()
 
 

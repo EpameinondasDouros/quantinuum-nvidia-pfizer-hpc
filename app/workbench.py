@@ -394,8 +394,10 @@ def molecule_tab() -> None:
             c2.metric("Active space", f"{report.active_electrons} e / {report.active_orbitals} o")
             c1.metric("Exact reference feasible", "yes" if report.exact_feasible else "no")
             fit = report.fits_ionq
-            c2.metric("IonQ packed fit", "unknown until built" if fit is None
-                      else f"{'yes' if fit else 'no'} ({report.ionq_packed_qubits} q)")
+            c2.metric("IonQ packed fit", "after build" if fit is None
+                      else f"{'yes' if fit else 'no'} ({report.ionq_packed_qubits} q)",
+                      help="Qubits for all measurement groups packed into one circuit (Qollab's IonQ gateway "
+                           "takes one single-circuit job per run); IonQ simulators allow 29.")
             for e in report.errors:
                 st.error(e)
             for w in report.warnings:
@@ -595,7 +597,8 @@ def grade_tab() -> None:
     name = c1.selectbox("Circuit", list(circs)[::-1], key="grade_circ")
     target = c2.number_input("Target (mHa)", 0.01, 100.0, 1.6, key="grade_target", disabled=not full)
     shots = c3.number_input("Shots (0 = exact only)", 0, 1_000_000, 0, step=1000, key="grade_shots", disabled=not full)
-    noise = c4.selectbox("Noise model", ["none", "trapped_ion"], key="grade_noise", disabled=not full)
+    noise = c4.selectbox("Noise model", ["none", "local"], key="grade_noise", disabled=not full,
+                         help="local: finite shots + GenQAI's depolarizing approximation (not IonQ's model). IonQ noise: Execute tab.")
     entry = circs[name]
     payload = {"g": rec.geometry_id, "c": to_jsonable(entry["circuit"]), "t": target, "s": shots, "n": noise}
     if st.button("Grade", type="primary", disabled=busy("grade"), key="grade_btn"):
