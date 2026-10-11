@@ -1,5 +1,7 @@
 # Submission material (SUBMITTED Oct 11, 2026)
 
+Rules check (qollab.xyz/programs/hackathon/terms), all met: Qiskit; runs on Qollab's free simulators incl. IonQ (verified); published v1.1 public on Qollab with an MIT LICENSE file; outside repo udsy19/genqai is MIT; project page covers the problem, what it does, how to run and replicate; built in the window with starting points and AI assistance disclosed; required attribution "This effort is supported by Qollab & IonQ" on the project page, README, ATTRIBUTION and website; 2:23 public demo video.
+
 Status: Qollab project published as v1.0 (public) and submitted to the Qollab × IonQ hackathon by team The Quantubians (theme: Quantum Impact). Demo video: https://drive.google.com/file/d/1oOhMOhFqhNBd3pZ_hhlYvR5wS0-tAtYF/view. Website: https://udsy19.github.io/genqai/. Public code: https://github.com/udsy19/genqai.
 
 ## Project title
