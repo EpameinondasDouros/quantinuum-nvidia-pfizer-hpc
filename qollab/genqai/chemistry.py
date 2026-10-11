@@ -1,8 +1,10 @@
 """Workstream A: molecular systems, active spaces, qubit Hamiltonians and classical references.
 
-Every qubit Hamiltonian is built from frozen-core active-space integrals of one PySCF RHF, so the
-Hamiltonian, the HF/CCSD/FCI references and the orbital choice all come from one SCF. Only
-gto/scf/ao2mo are used for the Hamiltonian and FCI (exact sector diagonalisation), because those are
+Every qubit Hamiltonian is built from frozen-core active-space integrals of one PySCF RHF (ROHF for
+open shells, with a doubly occupied core), so the Hamiltonian, the HF/CCSD/FCI references and the
+orbital choice all come from one SCF. Presets live in SYSTEMS; custom molecules (genqai.molecule)
+are added at run time with register_system, so pools, simulators and circuits work unchanged.
+Only gto/scf/ao2mo are used for the Hamiltonian and FCI (exact sector diagonalisation), because those are
 the PySCF parts that run in Qollab's browser runtime; tests check equality with PySCF CASCI.
 All energies stored in a HamiltonianRecord are TOTAL energies in Hartree:
     E_total = <psi| H_qubit |psi> + energy_shift
@@ -15,6 +17,7 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass
+from math import comb
 
 import numpy as np
 from qiskit.quantum_info import SparsePauliOp
@@ -29,14 +32,27 @@ class SystemSpec:
     """A fixed active-space problem. One model is trained per SystemSpec."""
 
     name: str  # e.g. "lih4"
-    molecule: str  # "H2", "LiH", "H4"
+    molecule: str  # "H2", "LiH", "H4", or a formula for custom molecules
     geometry_params: tuple[str, ...]  # names of the geometry parameters
     active_electrons: int
     num_active_orbitals: int
     mapping: str  # "parity" (two-qubit reduced) or "jordan_wigner"
     basis: str = "sto-3g"
+    charge: int = 0
+    multiplicity: int = 1  # 2S+1; PySCF spin = multiplicity - 1; > 1 uses ROHF
+    fixed_atoms: tuple | None = None  # custom molecule: ((symbol, (x, y, z)), ...) Angstrom; no geometry params
+    active_orbital_indices: tuple[int, ...] | None = None  # explicit 0-based MO indices
+    frozen_core: bool = True  # chemical core kept out of the active space (enforced by genqai.molecule)
+
+    @property
+    def nelec(self) -> tuple[int, int]:
+        """Active (n_alpha, n_beta). Every unpaired electron is active (the ROHF core is doubly occupied)."""
+        n_alpha = (self.active_electrons + self.multiplicity - 1) // 2
+        return n_alpha, self.active_electrons - n_alpha
 
     def atoms(self, params: tuple[float, ...]) -> list[tuple[str, tuple[float, float, float]]]:
+        if self.fixed_atoms is not None:
+            return [(sym, tuple(xyz)) for sym, xyz in self.fixed_atoms]
         if self.molecule == "H2":
             (r,) = params
             return [("H", (0.0, 0.0, 0.0)), ("H", (0.0, 0.0, r))]
@@ -55,16 +71,52 @@ SYSTEMS: dict[str, SystemSpec] = {
     "lih6": SystemSpec("lih6", "LiH", ("r",), 2, 4, "parity"),
     "h4": SystemSpec("h4", "H4", ("a", "b"), 4, 4, "jordan_wigner"),
 }
+PRESETS = tuple(SYSTEMS)
+
+# Exact sector diagonalisation is dense: above this many determinants the record's reference is CCSD
+# (or HF where PySCF's CC module is missing) and fci_energy is NaN.
+FCI_MAX_DIM = 2500
+
+
+def register_system(spec: SystemSpec) -> SystemSpec:
+    """Add a run-time SystemSpec (custom molecule) so get_pool / Evaluator / build_circuit see it."""
+    old = SYSTEMS.get(spec.name)
+    if old is not None and old != spec:
+        raise ValueError(f"system {spec.name!r} is already registered with different settings")
+    SYSTEMS[spec.name] = spec
+    return spec
+
+
+def sector_dim(ncas: int, nelec: tuple[int, int]) -> int:
+    """Number of determinants in the (n_alpha, n_beta) sector of ncas spatial orbitals."""
+    return comb(ncas, nelec[0]) * comb(ncas, nelec[1])
 
 
 def _select_active_orbitals(mol, mf, spec: SystemSpec) -> list[int]:
     """Deterministic active-orbital choice (0-based MO indices).
 
-    Frozen core = lowest (n_elec - active_electrons)/2 orbitals. Active orbitals are the next
-    orbitals by energy, restricted to sigma symmetry for linear molecules along z, except that
-    lih6 adds exactly one pi_x orbital (identified by its px AO weight) so the choice never
-    depends on how the degenerate pi pair happens to be rotated.
+    Explicit spec.active_orbital_indices win. Custom molecules (spec.fixed_atoms) take the orbitals
+    around the Fermi level by energy: the highest n_beta doubly occupied, every singly occupied, and
+    the lowest virtuals. Presets: frozen core = lowest (n_elec - active_electrons)/2 orbitals.
+    Active orbitals are the next orbitals by energy, restricted to sigma symmetry for linear
+    molecules along z, except that lih6 adds exactly one pi_x orbital (identified by its px AO
+    weight) so the choice never depends on how the degenerate pi pair happens to be rotated.
     """
+    if spec.active_orbital_indices is not None:
+        act = sorted(spec.active_orbital_indices)
+        if len(act) != spec.num_active_orbitals or len(set(act)) != len(act) or not 0 <= act[0] <= act[-1] < mf.mo_coeff.shape[1]:
+            raise ValueError(f"invalid active orbital indices {act} for {spec.num_active_orbitals} orbitals")
+        return act
+    if spec.fixed_atoms is not None:
+        n_alpha, n_beta = spec.nelec
+        order = np.argsort(mf.mo_energy, kind="stable")
+        by_occ = {k: [int(i) for i in order if round(mf.mo_occ[i]) == k] for k in (2, 1, 0)}
+        n_virt = spec.num_active_orbitals - n_alpha
+        if len(by_occ[1]) != n_alpha - n_beta or n_beta > len(by_occ[2]) or not 0 <= n_virt <= len(by_occ[0]):
+            raise ValueError(
+                f"cannot place {spec.active_electrons} electrons in {spec.num_active_orbitals} orbitals around the Fermi "
+                f"level ({len(by_occ[2])} doubly, {len(by_occ[1])} singly occupied, {len(by_occ[0])} virtual orbitals)")
+        return sorted(by_occ[2][len(by_occ[2]) - n_beta:] + by_occ[1] + by_occ[0][:n_virt])
     ncore = (mol.nelectron - spec.active_electrons) // 2
     ao_labels = mol.ao_labels()
     px = np.array(["px" in l for l in ao_labels])
@@ -85,8 +137,7 @@ def _select_active_orbitals(mol, mf, spec: SystemSpec) -> list[int]:
 
 def mapper_for(spec: SystemSpec) -> QubitMapper:
     if spec.mapping == "parity":
-        n = spec.active_electrons // 2
-        return ParityMapper(num_particles=(n, n))
+        return ParityMapper(num_particles=spec.nelec)
     return JordanWignerMapper()
 
 
@@ -94,8 +145,7 @@ def hf_bitstring(spec: SystemSpec) -> str:
     """HF reference as a Qiskit bitstring (qubit 0 is the RIGHTMOST character)."""
     from qiskit_nature.second_q.circuit.library import HartreeFock
 
-    n = spec.active_electrons // 2
-    hf = HartreeFock(spec.num_active_orbitals, (n, n), mapper_for(spec))
+    hf = HartreeFock(spec.num_active_orbitals, spec.nelec, mapper_for(spec))
     bits = ["0"] * hf.num_qubits
     for inst in hf.data:
         assert inst.operation.name == "x"
@@ -109,20 +159,22 @@ def geometry_id(spec: SystemSpec, params: tuple[float, ...]) -> str:
 
 
 def _active_space_integrals(mol, mf, act: list[int], nelecas: int):
-    """Frozen-core active-space (h1, h2 chemists' order, ecore) from RHF quantities only.
+    """Frozen-core active-space (h1, h2 chemists' order, ecore) from RHF/ROHF quantities only.
 
     Same result as PySCF's CASCI.get_h1eff / get_h2eff, but uses only gto/scf/ao2mo, which are
     the PySCF parts present in Qollab's WebAssembly build (no libmcscf / libfci / libcc).
-    Core orbitals are the lowest non-active MOs, matching CASCI.sort_mo.
+    Core orbitals are the lowest non-active MOs, matching CASCI.sort_mo. They are doubly occupied
+    (also for ROHF), so the closed-shell core potential J - K/2 applies.
     """
-    from pyscf import ao2mo
+    from pyscf import ao2mo, scf
 
     C = mf.mo_coeff
     ncore = (mol.nelectron - nelecas) // 2
     core = [i for i in range(C.shape[1]) if i not in act][:ncore]
     hcore = mf.get_hcore()
     dm_core = 2.0 * C[:, core] @ C[:, core].T
-    veff = mf.get_veff(mol, dm_core) if core else np.zeros_like(hcore)
+    # RHF.get_veff (= J - K/2 of the core density) also on an ROHF object, whose own get_veff wants (dma, dmb)
+    veff = scf.hf.RHF.get_veff(mf, mol, dm_core) if core else np.zeros_like(hcore)
     ecore = mol.energy_nuc() + np.einsum("ij,ji", dm_core, hcore) + 0.5 * np.einsum("ij,ji", dm_core, veff)
     c_act = C[:, act]
     h1 = c_act.T @ (hcore + veff) @ c_act
@@ -130,24 +182,27 @@ def _active_space_integrals(mol, mf, act: list[int], nelecas: int):
     return h1, ao2mo.restore(1, eri, len(act)), float(ecore)
 
 
-def _sector_ground_energy(energy: ElectronicEnergy, ncas: int, nelecas: int) -> float:
+def _sector_ground_energy(energy: ElectronicEnergy, ncas: int, nelec: tuple[int, int]) -> float:
     """Exact (FCI) electronic energy in the (n_alpha, n_beta) sector, by dense diagonalisation.
 
     Jordan-Wigner basis index bit j = occupation of spin orbital j (alpha 0..ncas-1, beta after).
     """
     op = JordanWignerMapper().map(energy.second_q_op())
-    n = nelecas // 2
+    n_alpha, n_beta = nelec
     idx = [i for i in range(2 ** (2 * ncas))
-           if bin(i & ((1 << ncas) - 1)).count("1") == n and bin(i >> ncas).count("1") == n]
+           if bin(i & ((1 << ncas) - 1)).count("1") == n_alpha and bin(i >> ncas).count("1") == n_beta]
     H = op.to_matrix(sparse=True)[idx][:, idx].toarray()
     return float(np.linalg.eigvalsh(H)[0])
 
 
 def _ccsd_energy(mf, frozen: list[int]) -> float:
-    """Frozen-core CCSD total energy; NaN where PySCF's CC module is unavailable (Qollab/Pyodide)."""
+    """Frozen-core CCSD total energy (PySCF runs UCCSD on an ROHF reference).
+
+    NaN where PySCF's CC module is unavailable (Qollab/Pyodide) or CCSD does not converge.
+    """
     try:
         from pyscf import cc
-    except OSError:
+    except (ImportError, OSError):
         return float("nan")
     mycc = cc.CCSD(mf, frozen=frozen)
     mycc.conv_tol = 1e-10
@@ -161,19 +216,21 @@ def build_record(spec: SystemSpec, params: tuple[float, ...]) -> HamiltonianReco
     params = tuple(float(p) for p in params)
     atoms = spec.atoms(params)
     mol = gto.M(
-        atom=[(s, xyz) for s, xyz in atoms], basis=spec.basis, unit="Angstrom", verbose=0
+        atom=[(s, xyz) for s, xyz in atoms], basis=spec.basis, unit="Angstrom", verbose=0,
+        charge=spec.charge, spin=spec.multiplicity - 1,
     )
-    mf = scf.RHF(mol)
+    mf = scf.RHF(mol) if spec.multiplicity == 1 else scf.ROHF(mol)
     mf.conv_tol = 1e-11
     mf.kernel()
     if not mf.converged:
-        raise RuntimeError(f"RHF not converged for {spec.name} {params}")
+        raise RuntimeError(f"{type(mf).__name__} not converged for {spec.name} {params}")
 
     act = _select_active_orbitals(mol, mf, spec)
-    ncas, nelecas = spec.num_active_orbitals, spec.active_electrons
+    ncas, nelecas, nelec = spec.num_active_orbitals, spec.active_electrons, spec.nelec
     h1, h2, ecore = _active_space_integrals(mol, mf, act, nelecas)
     energy = ElectronicEnergy.from_raw_integrals(h1, h2)
-    e_fci = _sector_ground_energy(energy, ncas, nelecas) + ecore
+    exact = sector_dim(ncas, nelec) <= FCI_MAX_DIM
+    e_fci = _sector_ground_energy(energy, ncas, nelec) + ecore if exact else float("nan")
     qubit_op: SparsePauliOp = mapper_for(spec).map(energy.second_q_op()).simplify(atol=1e-12)
     qubit_op = qubit_op.sort()  # canonical lexicographic Pauli order
 
@@ -184,6 +241,7 @@ def build_record(spec: SystemSpec, params: tuple[float, ...]) -> HamiltonianReco
         for lbl, c in zip(qubit_op.paulis.to_labels(), qubit_op.coeffs)
     ]
     assert max(abs(np.imag(c)) for c in qubit_op.coeffs) < 1e-10
+    open_shell = nelec[0] != nelec[1]
 
     return HamiltonianRecord(
         geometry_id=geometry_id(spec, params),
@@ -203,4 +261,9 @@ def build_record(spec: SystemSpec, params: tuple[float, ...]) -> HamiltonianReco
         ccsd_energy=e_ccsd,
         fci_energy=e_fci,
         software_versions=software_versions(),
+        charge=spec.charge,
+        multiplicity=spec.multiplicity,
+        num_alpha=nelec[0] if open_shell else -1,
+        num_beta=nelec[1] if open_shell else -1,
+        reference_method="FCI" if exact else "CCSD" if np.isfinite(e_ccsd) else "HF",
     )
