@@ -2,6 +2,7 @@
 
 **Team The Quantubians** · Qollab × IonQ Global Quantum Hackathon, Oct 9–11, 2026 · MIT licence ·
 Code, data and the full local workbench: https://github.com/udsy19/genqai
+**Demo video (2:23):** https://drive.google.com/file/d/1oOhMOhFqhNBd3pZ_hhlYvR5wS0-tAtYF/view · **Website:** https://udsy19.github.io/genqai/
 
 ## What it does
 

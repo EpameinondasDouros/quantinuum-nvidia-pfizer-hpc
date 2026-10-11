@@ -1,4 +1,6 @@
-# Submission material (ready to paste; nothing has been published or submitted)
+# Submission material (SUBMITTED Oct 11, 2026)
+
+Status: Qollab project published as v1.0 (public) and submitted to the Qollab × IonQ hackathon by team The Quantubians (theme: Quantum Impact). Demo video: https://drive.google.com/file/d/1oOhMOhFqhNBd3pZ_hhlYvR5wS0-tAtYF/view. Website: https://udsy19.github.io/genqai/. Public code: https://github.com/udsy19/genqai.
 
 ## Project title
 GenQAI: one-shot quantum chemistry circuits, a molecular circuit workbench
