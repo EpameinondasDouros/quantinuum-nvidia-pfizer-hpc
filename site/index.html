@@ -1,224 +1,444 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>GenQAI: one-shot quantum chemistry circuits</title>
-<meta name="description" content="A trained model writes a molecule's complete ground-state circuit in one forward pass, with zero quantum evaluations to propose it. Benchmarked honestly against ADAPT-VQE and simple baselines, and run on IonQ's Forte 1 noise model.">
-<meta name="color-scheme" content="light dark">
-<meta property="og:type" content="website">
-<meta property="og:title" content="GenQAI: one-shot quantum chemistry circuits">
-<meta property="og:description" content="A trained model writes the whole circuit in one forward pass: zero quantum evaluations to propose. Qollab × IonQ Global Quantum Hackathon 2026.">
-<meta property="og:image" content="og.png">
-<meta property="og:image:width" content="1600">
-<meta property="og:image:height" content="900">
-<meta property="og:image:alt" content="GenQAI title over the LiH potential-energy curve with one-shot generated points, next to a generated 4-qubit circuit.">
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="GenQAI: one-shot quantum chemistry circuits">
-<meta name="twitter:description" content="A trained model writes the whole circuit in one forward pass: zero quantum evaluations to propose.">
-<meta name="twitter:image" content="og.png">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230D1321'/%3E%3Cpath d='M4 11h24M4 21h24' stroke='%237C879C' stroke-width='2'/%3E%3Crect x='11' y='6' width='10' height='20' rx='2' fill='%23FFB347'/%3E%3C/svg%3E">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>One-shot quantum chemistry circuits — GenQAI</title>
+  <meta name="description" content="A reproduction of ADAPT-GQE at small scale: a transformer writes a molecule's whole ground-state circuit in one forward pass. Scored once on untouched geometries against ADAPT-VQE and simple baselines, and run on IonQ's noise-model simulators.">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="One-shot quantum chemistry circuits: a reproduction of ADAPT-GQE">
+  <meta property="og:description" content="A trained model writes the whole circuit in one forward pass: zero quantum evaluations to propose. What it does and does not establish. Qollab × IonQ Global Quantum Hackathon 2026.">
+  <meta property="og:url" content="https://udsy19.github.io/genqai/">
+  <meta property="og:image" content="https://udsy19.github.io/genqai/og.png">
+  <meta property="og:image:width" content="1600">
+  <meta property="og:image:height" content="900">
+  <meta property="og:image:alt" content="GenQAI title over the LiH potential-energy curve with one-shot generated points, next to a generated 4-qubit circuit.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://udsy19.github.io/genqai/og.png">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230a0a0a'/%3E%3Cpath d='M4 11h24M4 21h24' stroke='%23efedea' stroke-opacity='.5' stroke-width='2'/%3E%3Crect x='11' y='6' width='10' height='20' fill='%231e2edc'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<a class="skip" href="#main">Skip to content</a>
-
-<header class="top">
-  <nav class="wrap nav" aria-label="Sections">
-    <a class="brand" href="#top">GenQAI</a>
-    <ul>
-      <li><a href="#how">How it works</a></li>
-      <li><a href="#results">Results</a></li>
-      <li><a href="#figures">Figures</a></li>
-      <li><a href="#workbench">Workbench</a></li>
-      <li><a href="#demo">Demo</a></li>
-    </ul>
-  </nav>
-</header>
-
-<main id="main">
-
-<section class="hero wrap" id="top">
-  <div class="hero-text">
-    <p class="eyebrow">Team The Quantubians · Qollab × IonQ Global Quantum Hackathon 2026</p>
-    <h1>GenQAI: one-shot quantum chemistry circuits</h1>
-    <p class="pitch">Give it a molecule and a bond length. A trained model writes the complete ground-state circuit, every operator and rotation angle, in one forward pass, with <strong>zero quantum evaluations</strong> to propose it.</p>
-    <div class="actions">
-      <a class="btn btn-primary" href="https://qollab.xyz/u/udsy/genqai-one-shot-quantum-chemis">Run on Qollab</a>
-      <a class="btn" href="https://github.com/udsy19/genqai">Code on GitHub</a>
-      <a class="btn btn-quiet" href="#demo">Watch demo</a>
+<a class="skip" href="#main">Skip to the paper</a>
+<div class="app">
+  <header class="band">
+    <a class="wordmark" href="./">GenQAI</a>
+    <nav class="band-nav" aria-label="Pages">
+      <a href="./" class="band-link on" aria-current="page">Paper</a>
+      <a href="benchmarks.html" class="band-link">Benchmarks</a>
+      <a href="demo.html" class="band-link">Demo</a>
+    </nav>
+    <div class="band-right">
+      <a class="repo-link meta run" href="https://qollab.xyz/u/udsy/genqai-one-shot-quantum-chemis" target="_blank" rel="noopener noreferrer">Run on Qollab</a>
+      <a class="repo-link meta" href="https://github.com/udsy19/genqai" target="_blank" rel="noopener noreferrer">Open source</a>
     </div>
-  </div>
-  <figure class="hero-circuit">
-    <img src="circuit.svg" width="900" height="420" alt="A 4-qubit LiH circuit written by the transformer for a held-out bond length of 1.60 Å: X gates prepare the Hartree–Fock state on q0 and q1, then eight excitation operators G7, G5, G6, G4, G2, G0, G1, G3, each with its generated rotation angle.">
-    <figcaption>The transformer's own output for LiH at a held-out 1.60 Å: Hartree–Fock X gates, then eight excitation operators with their angles.</figcaption>
-  </figure>
-</section>
+  </header>
 
-<section class="band" id="how" aria-labelledby="how-h">
-  <div class="wrap">
-    <h2 id="how-h">How it works</h2>
-    <p class="lede">Quantinuum, NVIDIA and Pfizer's ADAPT-GQE trains a model on ADAPT-VQE circuits so that, for a new geometry, it skips ADAPT's operator search and VQE loop. We rebuilt that pipeline in Qiskit at hackathon scale. One run on Qollab goes through five stages, in order:</p>
-    <ol class="wire" role="list">
-      <li class="gate">
-        <span class="gate-id">1</span>
-        <h3>Molecule</h3>
-        <p>Pick a system (H₂, LiH, or the H₄ chain) and type any bond length in Å.</p>
-      </li>
-      <li class="gate">
-        <span class="gate-id">2</span>
-        <h3>Hamiltonian</h3>
-        <p>PySCF builds the qubit Hamiltonian live in your browser and prints the Hartree–Fock and exact FCI energies.</p>
-      </li>
-      <li class="gate gate-key">
-        <span class="gate-id">3</span>
-        <h3>One forward pass</h3>
-        <p>The trained transformer proposes the full circuit (NumPy, about 20 ms). <strong>Zero quantum evaluations to propose.</strong></p>
-      </li>
-      <li class="gate">
-        <span class="gate-id">4</span>
-        <h3>Grading</h3>
-        <p>The circuit is scored exactly against FCI, next to kernel-ridge regression, nearest-neighbour reuse and a live ADAPT-VQE run with the quantum evaluations it needed.</p>
-      </li>
-      <li class="gate">
-        <span class="gate-id">5</span>
-        <h3>IonQ execution</h3>
-        <p>Qollab's IonQ gateway takes one circuit per run, so every measurement basis is packed onto separate qubits of one circuit (H₂: 2 groups on 4 qubits).</p>
-      </li>
-    </ol>
-  </div>
-</section>
+  <main class="desk" id="main">
+    <div class="sheet"><article class="paper">
+      <div class="topline"><span class="meta">RESEARCH · WORKING PAPER</span><span class="meta">VERSION 2026-10-11 · EVERY NUMBER FROM A LOGGED RUN</span></div>
 
-<section class="wrap section" id="results" aria-labelledby="results-h">
-  <h2 id="results-h">Results</h2>
-  <p class="lede">Scored once on <em>test_fresh</em>: geometries drawn with a fixed seed after development finished. Chemical accuracy is |E − E<sub>FCI</sub>| ≤ 1.6 mHa.</p>
-  <div class="table-scroll" tabindex="0" role="region" aria-label="H4 test_fresh results table">
-    <table>
-      <caption>H₄ chain, 8 qubits, untouched test geometries</caption>
-      <thead>
-        <tr><th scope="col">Method</th><th scope="col">Median error</th><th scope="col">Worst</th><th scope="col">Within 1.6 mHa</th><th scope="col">CX</th><th scope="col">Quantum evals</th></tr>
-      </thead>
-      <tbody>
-        <tr><th scope="row">Fresh ADAPT-VQE</th><td>0.000 mHa</td><td>0.10</td><td>100%</td><td>865</td><td>949</td></tr>
-        <tr class="ours"><th scope="row">Our transformer, one shot</th><td>0.56 mHa</td><td>14.6</td><td>65%</td><td>923</td><td><strong>0</strong></td></tr>
-        <tr><th scope="row">Transformer + angle refinement</th><td>0.002 mHa</td><td>0.57</td><td>100%</td><td>923</td><td>48</td></tr>
-        <tr class="best"><th scope="row">Kernel-ridge regression, one shot</th><td><strong>0.014 mHa</strong></td><td><strong>0.59</strong></td><td><strong>100%</strong></td><td>923</td><td><strong>0</strong></td></tr>
-        <tr><th scope="row">Copy nearest circuit, orbital signs not fixed</th><td>4.2 mHa</td><td>520</td><td>35%</td><td>898</td><td>0</td></tr>
-      </tbody>
-    </table>
-  </div>
+      <div class="titleblock">
+        <h1>One-shot quantum chemistry circuits: a reproduction of ADAPT-GQE, and what it does and does not establish</h1>
+        <div class="byline">Team The Quantubians</div>
+        <span class="meta">Qollab × IonQ Global Quantum Hackathon · October 2026</span>
+        <span class="meta">MIT licence · code, data and checkpoints open</span>
+      </div>
 
-  <h3 class="sub">What we found</h3>
-  <ul class="findings">
-    <li><strong>One-shot proposals work for trained molecules.</strong> Median 0.002 mHa (LiH) to 0.56 mHa (H₄) with zero quantum evaluations, where ADAPT needs 155–949 per geometry.</li>
-    <li><strong>The key ingredient is fixing PySCF's orbital sign gauge, not the transformer.</strong> With it, plain kernel-ridge regression matches or beats our transformer at every training-set size. Without it, reusing the nearest circuit misses by up to 520 mHa.</li>
-    <li><strong>RL (GRPO) and self-distillation did not improve held-out accuracy.</strong> Budget-conditioned GRPO cut H₄ circuits from 914 to about 720 CX, but regression on a shorter fixed circuit was better at the same gate count.</li>
-    <li><strong>Pruning plus re-optimisation</strong> reaches 100% chemical accuracy at about 600–670 CX on H₄ (from 923), at the cost of thousands of energy evaluations.</li>
-    <li><strong>One-shot methods fail beyond the training range.</strong> Refinement or ADAPT recovers.</li>
-    <li><strong>On IonQ's Forte 1 noise model, gate count dominates.</strong> H₂ (4 CX) measured +7.8 ± 5.8, +16.8 ± 6.0 and +25.0 ± 6.4 mHa across three runs, and a custom HeH⁺ +36.1 ± 11.0 mHa. LiH's 172-CX circuit is about 460 mHa off under noise.</li>
-  </ul>
-</section>
+      <div class="abstract">
+        <div class="lead">Abstract</div>
+        <p>Quantinuum, NVIDIA and Pfizer's ADAPT-GQE trains a transformer on ADAPT-VQE circuits so that, for a new molecular geometry, it writes the whole circuit, operators and rotation angles, in one forward pass instead of running ADAPT's operator search and VQE loop. We rebuild that pipeline at small scale in Qiskit (chemistry, ADAPT teacher, Hamiltonian-conditioned transformer, GRPO, self-distillation, budget-conditioned generation, IonQ execution) for four active-space problems of 2 to 8 qubits, and score it once on <em>test_fresh</em>: 14–20 random geometries per molecule drawn with a fixed seed after development finished.</p>
+        <p>One-shot generation works inside the training range. With zero quantum evaluations to propose the circuit, the generated circuits land at a median of 0.002 mHa (LiH) to 0.56 mHa (H₄) from the exact energy, where fresh ADAPT needs 155–949 quantum evaluations per geometry. The decisive ingredient, though, is not the transformer but fixing PySCF's orbital sign gauge: with it, a plain kernel ridge regressor on the Hamiltonian coefficients matches or beats the transformer at every training-set size we tried. Energy-reward GRPO and self-distillation did not improve held-out error, and nothing one-shot extrapolates beyond the training range.</p>
+        <p>On IonQ's Forte 1 noise-model simulator, H₂'s 4-CX circuit measured +7.8 ± 5.8 to +25.0 ± 6.4 mHa across three runs, and LiH's 172-CX circuit about 460 mHa off: gate count dominates. The evidence supports a narrower contribution than the architecture suggests: a complete, open reproduction, an untouched-test benchmark against strong baselines, and the gauge-fixing finding. It does not establish that the transformer beats simpler regressors here, a wall-clock speedup at 2–8 qubits, or quantum advantage.</p>
+        <div class="kw">keywords · ADAPT-VQE · generative quantum circuits · transformer · GRPO · orbital sign gauge · kernel ridge regression · IonQ · Qiskit · Qollab</div>
+      </div>
 
-<section class="band" id="figures" aria-labelledby="figures-h">
-  <div class="wrap">
-    <h2 id="figures-h">Figures</h2>
-    <p class="lede">Generated by <code>scripts/make_figures.py</code> from the result files in the repo. Select a figure to open it full size.</p>
-    <div class="gallery">
-      <figure>
-        <a href="figures/fig1_pes.png"><img src="figures/fig1_pes.png" loading="lazy" alt="Potential-energy curves: energy versus bond length for each method, with residuals against exact FCI."></a>
-        <figcaption><b>Potential-energy curves.</b> Energy vs bond length, with residuals against FCI.</figcaption>
-      </figure>
-      <figure>
-        <a href="figures/fig2_test_errors.png"><img src="figures/fig2_test_errors.png" loading="lazy" alt="Per-geometry absolute error on the test splits for every method, shown with each method's cost."></a>
-        <figcaption><b>Test errors.</b> Per-geometry error by method, with cost.</figcaption>
-      </figure>
-      <figure>
-        <a href="figures/fig3_accuracy_cost.png"><img src="figures/fig3_accuracy_cost.png" loading="lazy" alt="Accuracy plotted against CX count and against the number of quantum evaluations for each method."></a>
-        <figcaption><b>Accuracy vs cost.</b> Accuracy against CX count and against quantum evaluations.</figcaption>
-      </figure>
-      <figure>
-        <a href="figures/fig6_ionq.png"><img src="figures/fig6_ionq.png" loading="lazy" alt="Measured energies on the local simulator and on IonQ's noise-model simulators, compared with the exact energy."></a>
-        <figcaption><b>IonQ.</b> Measured energies on local and IonQ simulators. Gate count dominates under noise.</figcaption>
-      </figure>
-      <figure>
-        <a href="figures/fig7_budget_frontier.png"><img src="figures/fig7_budget_frontier.png" loading="lazy" alt="Accuracy versus CX budget for the budget-conditioned policy, truncated ADAPT and regression."></a>
-        <figcaption><b>Budget frontier.</b> Accuracy vs CX budget: budget policy vs truncated ADAPT vs regression.</figcaption>
-      </figure>
-      <figure>
-        <a href="figures/fig8_learning_curve.png"><img src="figures/fig8_learning_curve.png" loading="lazy" alt="Accuracy versus training-set size for the transformer and kernel-ridge regression."></a>
-        <figcaption><b>Learning curve.</b> Accuracy vs training-set size. Kernel ridge matches or beats the transformer at every size.</figcaption>
-      </figure>
+      <h2><span class="num">1.</span> The problem is the cost per geometry</h2>
+      <p>To find a molecule's ground-state energy on a quantum computer, ADAPT-VQE builds a compact circuit one operator at a time: every step measures energy gradients for a whole pool of candidate operators and re-optimises all the angles. That costs hundreds of quantum evaluations per molecular geometry, repeated from scratch for every new geometry. On our 8-qubit H₄ chain a fresh ADAPT run spends 949 of them per untouched geometry (Table 2). A workflow that scans many conformers or bond lengths pays that bill each time.</p>
+      <p>The question is whether a model trained on ADAPT-VQE's own circuits can propose the whole circuit for a new geometry in one shot, how accurate that proposal is against strong classical and quantum baselines, and what it costs on IonQ's hardware models.</p>
+      <p><b>Units.</b> Errors are |E − E<sub>FCI</sub>| in milli-Hartree against exact diagonalisation of the same active-space Hamiltonian; chemical accuracy is ≤ 1.6 mHa. <b>Quantum evaluations</b> count energy evaluations plus ADAPT pool-gradient evaluations spent to propose the circuit for one geometry; one BFGS gradient call counts as one, as everywhere in the code (on hardware, parameter-shift gradients cost about 2 × the number of angles). CX is the Qiskit CX-basis count.</p>
+      <p><b>"Zero" is not zero cost.</b> One-shot generation makes no quantum energy evaluations to propose the circuit. Everything around it still costs something, and the workbench reports each part separately: building the Hamiltonian (classical SCF and integrals), training the model (the ADAPT teacher runs and the fit), grading against an exact reference, best-of-K ranking (K energy evaluations), refinement, and measuring the energy on a device (shots × measurement groups).</p>
+
+      <h2><span class="num">2.</span> The pipeline</h2>
+      <p>One run is a pipeline with a training loop in its middle (Figure 1). The chemistry stage builds frozen-core active-space Hamiltonians and exact energies; ADAPT-VQE is the teacher, with per-step cost logs; its circuits are relabelled in a fixed orbital sign gauge with one canonical operator sequence per molecule; a transformer with an operator head and a von Mises angle head learns to write them; GRPO, self-distillation and budget conditioning then fine-tune it on an energy reward. At inference, one forward pass proposes the circuit, an independent grader scores it, and the energy is measured with every measurement group packed into one circuit.</p>
+
       <figure class="wide">
-        <a href="figures/fig9_hw_optimization.png"><img src="figures/fig9_hw_optimization.png" loading="lazy" alt="Prune and refine compared with zero-evaluation methods: CX count, accuracy and evaluation cost."></a>
-        <figcaption><b>Hardware-aware optimisation.</b> Prune + refine vs zero-evaluation methods: CX, accuracy and evaluation cost.</figcaption>
+        <div class="scroll">
+        <svg class="pipeline" viewBox="0 0 760 242" role="img" aria-label="Pipeline: chemistry, ADAPT teacher, gauge-fixed labels, transformer, then a GRPO and distillation loop; at inference a new geometry's Hamiltonian goes through one forward pass, grading, and packed IonQ measurement">
+          <defs><marker id="ah" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#0a0a0a"/></marker></defs>
+          <g>
+            <text class="lbl" x="8" y="16">TRAINING, ONCE PER MOLECULE FAMILY</text>
+            <rect class="box" x="8" y="26" width="136" height="46" rx="2"/><text x="76" y="45" text-anchor="middle">Chemistry</text><text class="lbl" x="76" y="62" text-anchor="middle">PYSCF · CAS · FCI</text>
+            <rect class="box" x="160" y="26" width="136" height="46" rx="2"/><text x="228" y="45" text-anchor="middle">ADAPT teacher</text><text class="lbl" x="228" y="62" text-anchor="middle">GRADIENTS · VQE</text>
+            <rect class="box" x="312" y="26" width="136" height="46" rx="2"/><text x="380" y="45" text-anchor="middle">Gauge-fixed labels</text><text class="lbl" x="380" y="62" text-anchor="middle">ONE SEQUENCE</text>
+            <rect class="box" x="464" y="26" width="136" height="46" rx="2"/><text x="532" y="45" text-anchor="middle">Transformer</text><text class="lbl" x="532" y="62" text-anchor="middle">OPS + ANGLES</text>
+            <rect class="box" x="616" y="26" width="136" height="46" rx="2"/><text x="684" y="45" text-anchor="middle">GRPO · distill</text><text class="lbl" x="684" y="62" text-anchor="middle">ENERGY REWARD</text>
+            <path class="arrow" d="M144,49 L158,49"/><path class="arrow" d="M296,49 L310,49"/><path class="arrow" d="M448,49 L462,49"/><path class="arrow" d="M600,49 L614,49"/>
+            <path class="arrow loop" d="M684,72 L684,92 L566,92 L566,74"/>
+            <text class="lbl" x="752" y="106" text-anchor="end" fill="#e0492a">FINE-TUNE ON ITS OWN SAMPLES</text>
+            <path class="arrow" d="M498,72 L498,124 L244,124 L244,146"/>
+            <text class="lbl" x="490" y="118" text-anchor="end">TRAINED MODEL</text>
+            <text class="lbl" x="8" y="138">INFERENCE, PER NEW GEOMETRY</text>
+            <rect class="box" x="8" y="148" width="136" height="46" rx="2"/><text x="76" y="167" text-anchor="middle">New geometry</text><text class="lbl" x="76" y="184" text-anchor="middle">HAMILTONIAN, LIVE</text>
+            <rect class="box" x="176" y="148" width="136" height="46" rx="2"/><text x="244" y="167" text-anchor="middle">One forward pass</text><text class="lbl" x="244" y="184" text-anchor="middle">0 QUANTUM EVALS</text>
+            <rect class="box" x="344" y="148" width="136" height="46" rx="2"/><text x="412" y="167" text-anchor="middle">Grading</text><text class="lbl" x="412" y="184" text-anchor="middle">|E − FCI| · CX</text>
+            <rect class="box gate" x="512" y="142" width="240" height="58" rx="2"/><text x="632" y="163" text-anchor="middle">Packed IonQ measurement</text><text class="lbl" x="632" y="179" text-anchor="middle">ALL QWC GROUPS IN ONE CIRCUIT</text><text class="lbl" x="632" y="191" text-anchor="middle">ONE JOB PER RUN</text>
+            <path class="arrow" d="M144,171 L174,171"/><path class="arrow" d="M312,171 L342,171"/><path class="arrow" d="M480,171 L510,171"/>
+            <text class="lbl" x="8" y="220">WHITE: CLASSICAL OR SIMULATED WORK. RED: THE RL LOOP, WHICH DID NOT IMPROVE HELD-OUT ERROR (SECTION 4.4).</text>
+            <text class="lbl" x="8" y="234">BLUE: THE ONLY STEP THAT TOUCHES IONQ.</text>
+          </g>
+        </svg>
+        </div>
+        <figcaption><b>Figure 1.</b> One run. Training happens once per molecule family; at inference the trained model sees the new geometry's Hamiltonian and writes the circuit in one forward pass, which the grader scores against the exact energy before anything is measured. Qollab's IonQ gateway takes one single-circuit job per run, so every qubit-wise-commuting measurement group is a copy of the state on its own qubits of one circuit (H₂: 2 groups on 4 qubits). Code: <code>genqai/chemistry.py</code>, <code>adapt.py</code>, <code>features.py</code>, <code>model.py</code>, <code>rl.py</code>, <code>grading.py</code>, <code>measure.py</code>.</figcaption>
       </figure>
-    </div>
-  </div>
-</section>
 
-<section class="wrap section" id="workbench" aria-labelledby="workbench-h">
-  <h2 id="workbench-h">Workbench: any small molecule</h2>
-  <p class="lede">The repo also ships a local workbench (<code>streamlit run app/workbench.py</code>). Enter a molecule as SMILES or XYZ, set charge, spin and active space, and it builds the Hamiltonian, says whether a trained model covers it, and routes it. Only H₂, LiH and the H₄ chain have trained generators, so a new molecule takes the conventional-solver route (ADAPT), and the workbench says so.</p>
-  <div class="table-scroll" tabindex="0" role="region" aria-label="Custom molecule results table">
-    <table>
-      <caption>ADAPT on new molecules, graded against FCI of the same active-space Hamiltonian</caption>
-      <thead>
-        <tr><th scope="col">Molecule</th><th scope="col">Input</th><th scope="col">Charge / mult.</th><th scope="col">Active space</th><th scope="col">Qubits</th><th scope="col">FCI (Ha)</th><th scope="col">Quantum evals</th><th scope="col">Error</th><th scope="col">CX</th><th scope="col">IonQ packed fit</th></tr>
-      </thead>
-      <tbody>
-        <tr><th scope="row">HeH⁺</th><td>XYZ</td><td>+1 / 1</td><td>2e / 2o</td><td>2</td><td>−2.851024</td><td>66</td><td>0.0000 mHa</td><td>4</td><td>yes (8 qubits)</td></tr>
-        <tr><th scope="row">H₂O</th><td>SMILES <code>O</code></td><td>0 / 1</td><td>4e / 4o</td><td>6</td><td>−74.971616</td><td>243</td><td>0.0005 mHa</td><td>262</td><td>no (48 groups)</td></tr>
-        <tr><th scope="row">OH•</th><td>SMILES <code>[OH]</code></td><td>0 / 2</td><td>5e (3α, 2β) / 4o</td><td>6</td><td>−74.380209</td><td>168</td><td>0.0000 mHa</td><td>202</td><td>no (24 groups)</td></tr>
-      </tbody>
-    </table>
-  </div>
-  <p class="note">HeH⁺ on IonQ's Forte 1 noise-model simulator (1,000 shots, 4 measurement groups packed into one 8-qubit circuit): <strong>+36.1 ± 11.0 mHa</strong> from FCI. The exact energy of the same circuit is at FCI, so the gap is shot noise plus IonQ's noise model.</p>
-</section>
+      <figure class="wide">
+        <img src="circuit.svg" width="900" height="420" alt="A 4-qubit LiH circuit written by the transformer for a held-out bond length of 1.60 Å: X gates prepare the Hartree–Fock state on q0 and q1, then eight excitation operators G7, G5, G6, G4, G2, G0, G1, G3, each with its generated rotation angle printed below.">
+        <figcaption><b>Figure 2.</b> The transformer's own output for LiH (4 qubits) at a held-out bond length of 1.60 Å: Hartree–Fock X gates on q0 and q1, then eight excitation operators from the pool with their generated angles. Nothing was optimised to produce it. Drawn by <code>scripts/make_site_cover.py</code> from <code>results/lih4/gen_oneshot.jsonl</code>.</figcaption>
+      </figure>
 
-<section class="band" id="demo" aria-labelledby="demo-h">
-  <div class="wrap">
-    <h2 id="demo-h">Demo</h2>
-    <div class="video-frame">
-      <video controls preload="metadata" playsinline poster="cover.png" src="demo.mp4" width="1600" height="900" aria-describedby="video-note">
-        Your browser can't play this video. <a href="demo.mp4">Download demo.mp4</a>.
-      </video>
-    </div>
-    <p class="note" id="video-note" hidden>The demo video isn't available here yet. You can <a href="https://qollab.xyz/u/udsy/genqai-one-shot-quantum-chemis">run the project on Qollab</a> instead.</p>
-  </div>
-</section>
+      <h2><span class="num">3.</span> Setup</h2>
+      <div class="scroll wide" role="region" tabindex="0" aria-label="Table 1, the four systems">
+        <div class="tcap">Table 1 · the four systems · STO-3G throughout</div>
+        <table class="bench">
+          <thead><tr><th scope="col">System</th><th scope="col">Active space</th><th scope="col">Mapping</th><th scope="col">Qubits</th><th scope="col">Geometries</th></tr></thead>
+          <tbody>
+            <tr><td><code>h2</code> · H₂</td><td>CAS(2e, 2o)</td><td>parity, 2-qubit reduced</td><td class="n">2</td><td class="n">21 grid + 14 fresh</td></tr>
+            <tr><td><code>lih4</code> · LiH</td><td>CAS(2e, 3o), frozen core</td><td>parity</td><td class="n">4</td><td class="n">76 grid + 14 fresh</td></tr>
+            <tr><td><code>lih6</code> · LiH</td><td>CAS(2e, 4o), σ + one π</td><td>parity</td><td class="n">6</td><td class="n">46 grid + 14 fresh</td></tr>
+            <tr><td><code>h4</code> · H₄ chain</td><td>CAS(4e, 4o), linear chain (a, b, a)</td><td>Jordan–Wigner</td><td class="n">8</td><td class="n">64 grid + 20 fresh</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><b>Splits.</b> Splits are assigned per geometry before any labels exist: training and validation points, interpolation test points, a held-out contiguous interval, and extrapolation beyond the range. Those grid test splits were looked at while the label recipe and training were tuned, so they measure development, not generalisation. <em>test_fresh</em> is the result: geometries drawn with a fixed seed after development finished, under a rule fixed before any fresh result was computed (most inside the training range, a few beyond the grid edge), scored once with frozen checkpoints. Every headline number in this paper is on test_fresh; the grid-split tables are on the benchmarks page.</p>
+      <p><b>Gauge fixing.</b> PySCF's molecular-orbital signs flip arbitrarily between neighbouring geometries, and the optimal circuit angles flip with them. A model, or a nearest-neighbour lookup, that sees raw ADAPT labels is fitting noise it cannot predict from the Hamiltonian. We fix the orbital phase convention (<code>genqai/features.py</code>) and give each molecule one canonical operator sequence (<code>scripts/make_canonical_teacher.py</code>), so the labels become a smooth function of geometry.</p>
+      <p><b>Baselines.</b> Hartree–Fock and CCSD (classical); UCCSD-VQE; fresh ADAPT-VQE (the method being replaced) and ADAPT warm-started from the nearest training geometry; copying the nearest training circuit, naive, with orbital signs fixed, and with the canonical sequence, each also with angle refinement; kernel ridge regression and interpolation of the angles on the same canonical sequence. Generators: the SFT transformer, GRPO and self-distilled variants, and the budget-conditioned policy, each one-shot, best of 16, and with angle refinement. Hyperparameters are chosen on the validation split.</p>
 
-<section class="wrap section" id="claims" aria-labelledby="claims-h">
-  <h2 id="claims-h">What we don't claim</h2>
-  <ul class="claims">
-    <li>That the transformer beats simple regression here. It doesn't: kernel ridge matches or beats it.</li>
-    <li>Wall-clock speedups at 2–8 qubits. Exact diagonalisation is instant at this size.</li>
-    <li>Quantum advantage.</li>
-  </ul>
-  <p>The honest contribution is a complete, open, Qiskit-native reproduction of the architecture, an untouched-test benchmark against strong baselines, and the gauge-fixing finding, which any learned or reuse-based circuit generator for molecules has to handle.</p>
-</section>
+      <h2><span class="num">4.</span> Results</h2>
+      <h3>4.1 One shot, on untouched H₄ geometries</h3>
+      <p>On the 8-qubit H₄ chain the SFT transformer's one-shot circuits reach a median of 0.56 mHa with zero quantum evaluations, and 65% of untouched geometries are within chemical accuracy (Figure 3, Table 2). Best of 16 lifts that to 80% for 16 evaluations; a short angle refinement takes every geometry there for 48, against 949 for a fresh ADAPT run. The simplest learned baseline does better than all of them at zero cost: kernel ridge regression on the gauge-fixed canonical labels has a median of 0.014 mHa, a worst case of 0.59 mHa, and 100% within target. The naive nearest-circuit copy shows what the gauge does: a worst case of 520 mHa, and 4.29 mHa once the signs are fixed.</p>
 
-</main>
+      <figure class="wide">
+        <div class="scroll"><div id="fig-strip" class="chart"></div></div>
+        <div class="legend"><span style="--c:#1e2edc">Transformer (SFT)</span><span style="--c:#e0492a">Kernel-ridge angle regression</span><span style="--c:#7fb2e8">Copy nearest training circuit</span><span style="--c:#0a0a0a">ADAPT, UCCSD-VQE, HF, CCSD</span></div>
+        <figcaption><b>Figure 3.</b> Every untouched H₄ geometry (20, six beyond the grid edge), one dot per geometry, |E − E<sub>FCI</sub>| on a log axis; the tick is the median, the shaded band is chemical accuracy. The right-hand columns give the quantum evaluations each method spends per geometry to propose its circuit and the share within 1.6 mHa. Errors below 10⁻⁴ mHa are drawn at the axis floor. Source: <code>results_fresh/h4/*.jsonl</code>.</figcaption>
+      </figure>
 
-<footer class="foot">
-  <div class="wrap">
-    <p><strong>GenQAI</strong> by Team The Quantubians, built for the Qollab × IonQ Global Quantum Hackathon 2026. Code under the <a href="https://github.com/udsy19/genqai">MIT licence</a>.</p>
-    <p><strong>This effort is supported by Qollab &amp; IonQ.</strong></p>
-    <p>All code was written during the hackathon window, with no starter code, developed with AI coding assistants (Claude Code). Inspired by the Quantinuum / NVIDIA / Pfizer ADAPT-GQE work and ADAPT-VQE (Grimsley et al., 2019). Built on Qiskit, Qiskit Nature, PySCF, qiskit-ionq and NumPy/SciPy. Design ideas (no code) came from Conditional_GQE, gqe-for-qsci, the PennyLane GQE demo and nanoGPT; licences are in ATTRIBUTION.md in the repo.</p>
-  </div>
-</footer>
+      <!-- gen:h4 -->
+<div class="scroll wide" role="region" tabindex="0" aria-label="Table 2 · H₄ chain, 8 qubits · test_fresh, 20 untouched geometries (6 beyond the grid edge) · scored once"><div class="tcap">Table 2 · H₄ chain, 8 qubits · test_fresh, 20 untouched geometries (6 beyond the grid edge) · scored once</div>
+<table class="bench">
+<thead><tr><th scope="col">Method</th><th scope="col">Median |err| mHa</th><th scope="col">Worst mHa</th><th scope="col">≤ 1.6 mHa</th><th scope="col">CX</th><th scope="col">Quantum evals</th></tr></thead>
+<tbody>
+<tr><td>Hartree–Fock</td><td class="n">157</td><td class="n">212</td><td class="n">0%</td><td class="n">0</td><td class="n">0</td></tr>
+<tr><td>CCSD (classical)</td><td class="n">0.098</td><td class="n">4.11</td><td class="n">80%</td><td class="n">–</td><td class="n">0</td></tr>
+<tr><td>UCCSD-VQE</td><td class="n">0.595</td><td class="n">4.38</td><td class="n">80%</td><td class="n">736</td><td class="n">37</td></tr>
+<tr><td>Fresh ADAPT-VQE</td><td class="n">&lt; 0.001</td><td class="n">0.101</td><td class="n">100%</td><td class="n">865</td><td class="n">949</td></tr>
+<tr><td>Warm-started ADAPT (nearest training geometry)</td><td class="n">&lt; 0.001</td><td class="n">0.101</td><td class="n">100%</td><td class="n">898</td><td class="n">145</td></tr>
+<tr><td>Copy nearest training circuit (naive)</td><td class="n">4.21</td><td class="n">520</td><td class="n">35%</td><td class="n">898</td><td class="n">0</td></tr>
+<tr><td>Copy nearest, orbital signs fixed</td><td class="n">1.05</td><td class="n">4.29</td><td class="n">65%</td><td class="n">898</td><td class="n">0</td></tr>
+<tr class="ours"><td>Transformer (SFT), one shot</td><td class="n">0.555</td><td class="n">14.6</td><td class="n">65%</td><td class="n">923</td><td class="n">0</td></tr>
+<tr><td>Transformer (SFT), best of 16</td><td class="n">0.238</td><td class="n">12.7</td><td class="n">80%</td><td class="n">923</td><td class="n">16</td></tr>
+<tr><td>Transformer (SFT) + angle refinement</td><td class="n">0.002</td><td class="n">0.570</td><td class="n">100%</td><td class="n">923</td><td class="n">48</td></tr>
+<tr><td>Kernel-ridge angle regression, one shot</td><td class="n">0.014</td><td class="n">0.588</td><td class="n">100%</td><td class="n">923</td><td class="n">0</td></tr>
+</tbody>
+</table></div>
+<!-- /gen:h4 -->
 
+      <h3>4.2 LiH, and the edge of the training range</h3>
+      <p>On LiH every one-shot method, transformer or regression, reaches 71% within chemical accuracy on test_fresh (Tables 3 and 4), and the reason is the split, not the methods: the 10 in-range geometries are all correct and the 4 extrapolated ones (4.1–4.4 Å) all fail, by 6–150 mHa. Refinement, warm-started ADAPT and fresh ADAPT don't fail there, because they spend evaluations on the geometry in front of them. Over all fourteen geometries the transformer's median is 0.001 mHa (4 qubits) and 0.002 mHa (6 qubits).</p>
+      <!-- gen:lih -->
+<div class="scroll wide" role="region" tabindex="0" aria-label="Table 3 · LiH, 4 qubits · test_fresh, 14 geometries (4 extrapolated)"><div class="tcap">Table 3 · LiH, 4 qubits · test_fresh, 14 geometries (4 extrapolated)</div>
+<table class="bench">
+<thead><tr><th scope="col">Method</th><th scope="col">Median |err| mHa</th><th scope="col">Worst mHa</th><th scope="col">≤ 1.6 mHa</th><th scope="col">CX</th><th scope="col">Quantum evals</th></tr></thead>
+<tbody>
+<tr><td>Hartree–Fock</td><td class="n">92.2</td><td class="n">185</td><td class="n">0%</td><td class="n">0</td><td class="n">0</td></tr>
+<tr><td>Fresh ADAPT-VQE</td><td class="n">&lt; 0.001</td><td class="n">&lt; 0.001</td><td class="n">100%</td><td class="n">171</td><td class="n">155</td></tr>
+<tr><td>Copy nearest training circuit (naive)</td><td class="n">0.027</td><td class="n">33.9</td><td class="n">71%</td><td class="n">172</td><td class="n">0</td></tr>
+<tr class="ours"><td>Transformer (SFT), one shot</td><td class="n">0.001</td><td class="n">53.7</td><td class="n">71%</td><td class="n">172</td><td class="n">0</td></tr>
+<tr><td>Transformer (SFT) + angle refinement</td><td class="n">&lt; 0.001</td><td class="n">&lt; 0.001</td><td class="n">100%</td><td class="n">172</td><td class="n">18</td></tr>
+<tr><td>Kernel-ridge angle regression, one shot</td><td class="n">&lt; 0.001</td><td class="n">150</td><td class="n">71%</td><td class="n">172</td><td class="n">0</td></tr>
+</tbody>
+</table></div>
+<div class="scroll wide" role="region" tabindex="0" aria-label="Table 4 · LiH, 6 qubits · test_fresh, 14 geometries (4 extrapolated)"><div class="tcap">Table 4 · LiH, 6 qubits · test_fresh, 14 geometries (4 extrapolated)</div>
+<table class="bench">
+<thead><tr><th scope="col">Method</th><th scope="col">Median |err| mHa</th><th scope="col">Worst mHa</th><th scope="col">≤ 1.6 mHa</th><th scope="col">CX</th><th scope="col">Quantum evals</th></tr></thead>
+<tbody>
+<tr><td>Hartree–Fock</td><td class="n">94</td><td class="n">176</td><td class="n">0%</td><td class="n">0</td><td class="n">0</td></tr>
+<tr><td>Fresh ADAPT-VQE</td><td class="n">&lt; 0.001</td><td class="n">&lt; 0.001</td><td class="n">100%</td><td class="n">297</td><td class="n">249</td></tr>
+<tr><td>Copy nearest training circuit (naive)</td><td class="n">0.114</td><td class="n">25.9</td><td class="n">71%</td><td class="n">297</td><td class="n">0</td></tr>
+<tr class="ours"><td>Transformer (SFT), one shot</td><td class="n">0.002</td><td class="n">26.5</td><td class="n">71%</td><td class="n">298</td><td class="n">0</td></tr>
+<tr><td>Transformer (SFT) + angle refinement</td><td class="n">&lt; 0.001</td><td class="n">&lt; 0.001</td><td class="n">100%</td><td class="n">298</td><td class="n">28</td></tr>
+<tr><td>Kernel-ridge angle regression, one shot</td><td class="n">&lt; 0.001</td><td class="n">15.6</td><td class="n">71%</td><td class="n">298</td><td class="n">0</td></tr>
+</tbody>
+</table></div>
+<!-- /gen:lih -->
+
+      <h3>4.3 What carries the accuracy</h3>
+      <p>If the transformer were learning something regression cannot, it should pull ahead as data grows. It does not (Figure 4). On nested random training subsets, with every method one-shot, kernel ridge is at or below the transformer's median error at every size on both systems: on H₄ 2.6 against 7.5 mHa at 5 training geometries and 0.014 against 0.56 mHa on the full 35; on LiH-6q 0.078 against 0.20 mHa at 5. The full H₄ training set cost 32,429 teacher ADAPT evaluations to label.</p>
+      <figure class="wide">
+        <div class="scroll"><div id="fig-learn" class="chart"></div></div>
+        <div class="legend"><span style="--c:#1e2edc">Transformer (SFT), one shot</span><span style="--c:#e0492a">Kernel ridge, one shot</span><span style="--c:#7fb2e8">Copy nearest, signs fixed</span></div>
+        <figcaption><b>Figure 4.</b> Median |E − E<sub>FCI</sub>| on test_fresh against the number of training geometries N (log–log). Points are the median over three subset seeds, bars the seed range; the largest N is the full training set, one run. Under each N: the teacher ADAPT evaluations needed to label that subset. Dashed: chemical accuracy. Source: <code>results/learning_curve.jsonl</code>.</figcaption>
+      </figure>
+      <p>The ablations say where the accuracy comes from (benchmarks page, from <code>results/ablations.md</code>). On H₄ test_fresh, turning the gauge fix off takes kernel ridge from 100% to 80% within target and its worst case from 0.59 to 43.7 mHa, and the transformer's worst case from 14.6 to 65.7 mHa. Training on raw ADAPT labels instead of the canonical sequence drops kernel ridge to 45% and the transformer to 50%. Conditioning on the geometry instead of the Hamiltonian leaves kernel ridge at 5% (median 99.9 mHa): the Hamiltonian coefficients carry the orbital signs, the geometry does not.</p>
+
+      <h3>4.4 Reinforcement learning, budgets, and the CX frontier</h3>
+      <p>Energy-reward GRPO and self-distillation did not improve held-out error: on H₄ test_fresh the GRPO model's one-shot median is 0.562 mHa and the self-distilled one 0.598, against the SFT model's 0.555, all at 65% within target. What GRPO did make work is <b>budget-conditioned</b> generation: one model emits shorter circuits on request, about 722 CX instead of 923 on H₄, where the same budget policy trained by SFT alone is hundreds of mHa off. But kernel ridge on a fixed prefix of the canonical sequence does better at the same gate count (Figure 5): 75% within target at 720 CX on H₄ test_fresh, against 55% for the budget policy's best level at 722.</p>
+      <p>Hardware-aware optimisation moves the frontier, at a price. Greedily pruning operators and re-optimising the angles (<code>genqai/optimize.py</code>) reaches 1.6 mHa on 100% of untouched geometries with H₄ at 668 CX (from 923) and LiH-6q at 162 CX (from 298), below every zero-evaluation option at that accuracy. It spends about 2,400 (H₄) and 310 (LiH-6q) energy evaluations per geometry, more than fresh ADAPT's 949 and 249. It is a different cost class from one-shot generation, and once evaluations are allowed the starting generator stops mattering: the SFT and kernel-ridge starts end at the same circuits. Pruning without the exact reference (tolerance chosen on validation) gives nearly the same CX but only 90% within target on H₄ (Tables 5 and 6).</p>
+      <figure class="wide">
+        <div class="scroll"><div id="fig-front" class="chart"></div></div>
+        <div class="legend"><span style="--c:#e0492a">Kernel ridge on canonical prefixes (one shot)</span><span style="--c:#0a0a0a">ADAPT truncated at k operators (fresh run)</span><span style="--c:#1e2edc">Budget-conditioned policy (one shot)</span><span style="--c:#7fb2e8">Prune + refine, exact reference (spends evaluations)</span></div>
+        <figcaption><b>Figure 5.</b> Share of test_fresh geometries within 1.6 mHa against mean compiled CX. Each line point is one budget level or prefix length, averaged over the geometries; truncated ADAPT needs a fresh ADAPT run per geometry and runs that stopped earlier drop out of its longer levels. Open circles are the full-length one-shot circuits (SFT and kernel ridge share a CX count); the arrow goes to the same circuits after prune + refine, labelled with the energy evaluations that cost. Hollow diamond: reference-free pruning. Sources: <code>results/*/budget_frontier.jsonl</code>, <code>results_fresh/*/hw_opt.jsonl</code>.</figcaption>
+      </figure>
+      <!-- gen:hw -->
+<div class="scroll wide" role="region" tabindex="0" aria-label="Table 5 · lih6 · test_fresh · results/hw_opt.md"><div class="tcap">Table 5 · lih6 · test_fresh · results/hw_opt.md</div>
+<table class="bench many">
+<thead><tr><th scope="col">circuit</th><th scope="col">cost class</th><th scope="col">n</th><th scope="col">mean CX</th><th scope="col">median abs err (mHa)</th><th scope="col">max abs err</th><th scope="col">&lt;= 1.6 mHa</th><th scope="col">mean quantum evals</th><th scope="col">same-CX KRR-prefix &lt;= 1.6</th><th scope="col">same-CX truncated ADAPT &lt;= 1.6</th></tr></thead>
+<tbody>
+<tr><td>sft (as generated)</td><td class="n">one-shot</td><td class="n">14</td><td class="n">298</td><td class="n">0.00233</td><td class="n">26.5</td><td class="n">71%</td><td class="n">0</td><td class="n">–</td><td class="n">–</td></tr>
+<tr class="ours"><td>sft + prune/refine (oracle)</td><td class="n">+ energy evals</td><td class="n">14</td><td class="n">162</td><td class="n">0.901</td><td class="n">1.6</td><td class="n">100%</td><td class="n">315</td><td class="n">36%</td><td class="n">71%</td></tr>
+<tr><td>krr (as generated)</td><td class="n">one-shot</td><td class="n">14</td><td class="n">298</td><td class="n">4.72e-06</td><td class="n">15.6</td><td class="n">71%</td><td class="n">0</td><td class="n">–</td><td class="n">–</td></tr>
+<tr class="ours"><td>krr + prune/refine (oracle)</td><td class="n">+ energy evals</td><td class="n">14</td><td class="n">162</td><td class="n">0.901</td><td class="n">1.6</td><td class="n">100%</td><td class="n">308</td><td class="n">36%</td><td class="n">71%</td></tr>
+<tr><td>adapt (as generated)</td><td class="n">ADAPT run</td><td class="n">14</td><td class="n">297</td><td class="n">8.88e-13</td><td class="n">0.000308</td><td class="n">100%</td><td class="n">249</td><td class="n">–</td><td class="n">–</td></tr>
+<tr><td>regress_prefix @ level 8 (VAL-chosen)</td><td class="n">one-shot</td><td class="n">14</td><td class="n">290</td><td class="n">0.0728</td><td class="n">89.2</td><td class="n">71%</td><td class="n">0</td><td class="n">–</td><td class="n">–</td></tr>
+<tr><td>adapt @ level 6 (VAL-chosen)</td><td class="n">ADAPT run, truncated</td><td class="n">14</td><td class="n">245</td><td class="n">0.524</td><td class="n">0.694</td><td class="n">100%</td><td class="n">147</td><td class="n">–</td><td class="n">–</td></tr>
+</tbody>
+</table></div>
+<div class="scroll wide" role="region" tabindex="0" aria-label="Table 6 · h4 · test_fresh · results/hw_opt.md"><div class="tcap">Table 6 · h4 · test_fresh · results/hw_opt.md</div>
+<table class="bench many">
+<thead><tr><th scope="col">circuit</th><th scope="col">cost class</th><th scope="col">n</th><th scope="col">mean CX</th><th scope="col">median abs err (mHa)</th><th scope="col">max abs err</th><th scope="col">&lt;= 1.6 mHa</th><th scope="col">mean quantum evals</th><th scope="col">same-CX KRR-prefix &lt;= 1.6</th><th scope="col">same-CX truncated ADAPT &lt;= 1.6</th></tr></thead>
+<tbody>
+<tr><td>sft (as generated)</td><td class="n">one-shot</td><td class="n">20</td><td class="n">923</td><td class="n">0.555</td><td class="n">14.6</td><td class="n">65%</td><td class="n">0</td><td class="n">–</td><td class="n">–</td></tr>
+<tr class="ours"><td>sft + prune/refine (oracle)</td><td class="n">+ energy evals</td><td class="n">20</td><td class="n">668</td><td class="n">1.01</td><td class="n">1.58</td><td class="n">100%</td><td class="n">2438</td><td class="n">60%</td><td class="n">65%</td></tr>
+<tr><td>krr (as generated)</td><td class="n">one-shot</td><td class="n">20</td><td class="n">923</td><td class="n">0.0143</td><td class="n">0.588</td><td class="n">100%</td><td class="n">0</td><td class="n">–</td><td class="n">–</td></tr>
+<tr class="ours"><td>krr + prune/refine (oracle)</td><td class="n">+ energy evals</td><td class="n">20</td><td class="n">668</td><td class="n">1.01</td><td class="n">1.58</td><td class="n">100%</td><td class="n">2385</td><td class="n">60%</td><td class="n">65%</td></tr>
+<tr><td>adapt (as generated)</td><td class="n">ADAPT run</td><td class="n">20</td><td class="n">865</td><td class="n">0.000163</td><td class="n">0.101</td><td class="n">100%</td><td class="n">949</td><td class="n">–</td><td class="n">–</td></tr>
+<tr><td>regress_prefix @ level 17 (VAL-chosen)</td><td class="n">one-shot</td><td class="n">20</td><td class="n">923</td><td class="n">0.0143</td><td class="n">0.588</td><td class="n">100%</td><td class="n">0</td><td class="n">–</td><td class="n">–</td></tr>
+<tr><td>adapt @ level 15 (VAL-chosen)</td><td class="n">ADAPT run, truncated</td><td class="n">15</td><td class="n">831</td><td class="n">0.0404</td><td class="n">0.706</td><td class="n">100%</td><td class="n">734</td><td class="n">–</td><td class="n">–</td></tr>
+</tbody>
+</table></div>
+<!-- /gen:hw -->
+
+      <h3>4.5 On IonQ, gate count is what matters</h3>
+      <p>Every IonQ number here is from IonQ's cloud noise-model simulators, which are free; paid hardware was never used. H₂'s circuit has 4 CX (4 native two-qubit gates on Forte 1). Run from the browser through Qollab at r = 1.33 Å it measured +7.8 ± 5.8 and +16.8 ± 6.0 mHa (jobs <code>01a12826-5478-72af-b517-c3e60f663d79</code>, <code>01a1285e-639a-7445-8d01-aa0365bdc241</code>), and +25.0 ± 6.4 mHa at r = 0.8 Å through the API (job <code>01a12845-095c-73f9-b107-03d2aa0cef79</code>). Treat these as three samples, not a calibrated error. A custom molecule ran too: HeH⁺, an ADAPT circuit with 4 measurement groups packed on 8 qubits, gave +36.1 ± 11.0 mHa (job <code>01a12858-0690-7546-94e7-76cddf9f0e3f</code>). LiH's 172-CX circuit, 25 groups and 25,000 shots, is +460 ± 20 mHa off on the Forte 1 model and +473 ± 20 on Aria 1, while its exact energy is at FCI (Figure 6).</p>
+      <figure class="wide">
+        <div class="scroll"><div id="fig-ionq" class="chart"></div></div>
+        <div class="legend"><span style="--c:#e0492a">Run in the browser through Qollab, IonQ Forte 1 model</span><span style="--c:#1e2edc">IonQ Forte 1 model, API</span><span style="--c:#0a0a0a">IonQ Aria 1 model, API</span><span style="--c:#7fb2e8">Chemical accuracy ±1.6 mHa</span></div>
+        <figcaption><b>Figure 6.</b> Measured energy minus FCI with one standard error, for every IonQ noise-model run with a job id. The axis is linear and broken between 60 and 400 mHa so the LiH runs fit. The 4-CX circuits sit within a few standard errors of chemical accuracy; the 172-CX circuit is two orders of magnitude off. Sources: <code>results/*/ionq_demo_*.json</code>, <code>results/h2/execution_ionq_forte1_*.json</code>, <code>results/custom_heh+_ionq_forte1.json</code>, <code>docs/qollab_runtime_checklist.md</code>.</figcaption>
+      </figure>
+
+      <h2><span class="num">5.</span> Findings</h2>
+      <div class="finding"><span class="k">1</span><div><strong>Fixing the orbital sign gauge is the decisive ingredient.</strong><p>PySCF's orbital signs flip between neighbouring geometries and the optimal angles flip with them. Fix the gauge and give each molecule one canonical operator sequence, and the labels become learnable; leave it unfixed and copying the nearest circuit misses by up to 520 mHa on H₄. Any learned or reuse-based circuit generator for molecules has to handle this.</p></div></div>
+      <div class="finding"><span class="k">2</span><div><strong>Kernel ridge matches or beats the transformer.</strong><p>At every training-set size we tried, on both systems with a learning curve, regression on the Hamiltonian coefficients is at or below the transformer's median error; on H₄ test_fresh it is 0.014 against 0.56 mHa, with 100% against 65% within target. We do not claim the transformer beats simpler regressors here.</p></div></div>
+      <div class="finding"><span class="k">3</span><div><strong>RL did not beat imitation.</strong><p>Energy-reward GRPO and self-distillation left held-out error where SFT put it (H₄ test_fresh median 0.562 and 0.598 against 0.555 mHa, all 65% within target).</p></div></div>
+      <div class="finding"><span class="k">4</span><div><strong>Budget conditioning works, and loses to a fixed prefix.</strong><p>GRPO is what made one model emit shorter circuits on request, about 722 CX instead of 923 on H₄. Regression on a fixed operator prefix is more accurate at the same gate count.</p></div></div>
+      <div class="finding"><span class="k">5</span><div><strong>Prune + refine is a different cost class.</strong><p>It reaches 100% within target at 668 CX on H₄ and 162 CX on LiH-6q, below every zero-evaluation operating point, but spends about 2,400 and 310 energy evaluations per geometry, as much as or more than fresh ADAPT. The starting generator stops mattering once evaluations are allowed.</p></div></div>
+      <div class="finding"><span class="k">6</span><div><strong>Nothing one-shot extrapolates.</strong><p>Beyond the training range (LiH at 4.1–4.4 Å) every one-shot method misses, by 6–150 mHa; refinement and ADAPT don't. One-shot proposals are an interpolation tool, and the workbench routes out-of-range requests as experimental for that reason.</p></div></div>
+      <div class="finding"><span class="k">7</span><div><strong>On IonQ, gate count dominates.</strong><p>A 4-CX H₂ circuit measures within tens of mHa on the Forte 1 noise model; a 172-CX LiH circuit is about 460 mHa off. For hardware, the lever is two-qubit gate count, which is why the CX frontier matters more than another decimal of noiseless accuracy.</p></div></div>
+      <div class="finding"><span class="k">8</span><div><strong>Qollab's runtime set the design.</strong><p>Qollab runs Python in the browser on Pyodide, with no PyTorch, a PySCF build without CASCI, FCI or CC, and an IonQ gateway that takes one single-circuit job per run. So the browser build exports the transformer to NumPy (about 20 ms), builds the Hamiltonian and FCI from RHF integrals (identical to CASCI to 10⁻¹⁴ natively), and packs every measurement group onto disjoint qubits of one circuit, which fits only when groups × qubits ≤ 29: in practice H₂-sized problems (H₂, HeH⁺).</p></div></div>
+
+      <h2><span class="num">6.</span> Threats to validity</h2>
+      <ul>
+        <li><b>Scale.</b> Two to eight qubits, STO-3G, fixed active spaces. Exact diagonalisation is instant at this size, so nothing here is a wall-clock claim, and the regime where ADAPT's cost would actually bite is not tested.</li>
+        <li><b>Small untouched sets.</b> test_fresh has 14–20 geometries per molecule; a percentage step on LiH is one geometry in fourteen. The grid test splits were seen while labels and training were tuned and are reported separately.</li>
+        <li><b>The extrapolation share sets the LiH percentages.</b> With 4 of 14 fresh LiH geometries beyond the grid edge, every one-shot method's 71% is a statement about the split as much as the method.</li>
+        <li><b>An exact reference exists here and won't at scale.</b> Grading, refinement targets and "oracle" pruning use FCI. Reference-free pruning already loses accuracy on H₄ (90% within target).</li>
+        <li><b>Evaluation accounting.</b> One BFGS gradient call counts as one evaluation; parameter-shift gradients on hardware would cost about 2 × the number of angles, which makes refinement and pruning more expensive than reported, not less.</li>
+        <li><b>IonQ numbers are simulators and few.</b> All runs are IonQ's noise-model simulators, one job each; three H₂ samples are not a calibrated error. The local noisy model in the benchmark tables is our own depolarising approximation, not IonQ's.</li>
+        <li><b>Seeds.</b> Transformer ablations train three seeds and keep the validation-best; learning curves use three subset seeds. The tables report the kept model, not a spread over training seeds.</li>
+        <li><b>Open shells.</b> The custom-molecule path's open-shell pools conserve S<sub>z</sub> but not S².</li>
+      </ul>
+
+      <h2><span class="num">7.</span> What a valid next result requires</h2>
+      <p>The sequence that would turn this reproduction into evidence for one-shot circuit generation as a method is:</p>
+      <ol>
+        <li>Make gauge-fixed kernel ridge the baseline to beat, on every system, in every table.</li>
+        <li>Move to active spaces where fresh ADAPT's evaluation count is the bottleneck and exact diagonalisation is no longer instant, and report wall-clock and cost there.</li>
+        <li>Train one model across molecule families and test it on families it has not seen; transfer is the only place a sequence model has an obvious edge over per-family regression.</li>
+        <li>Draw a fresh untouched test set per system before any inspection, larger than 14–20 geometries, with the extrapolation share fixed in advance.</li>
+        <li>Grade without an exact reference: reference-free stopping rules for refinement and pruning, with their accuracy loss reported.</li>
+        <li>Count evaluations as hardware would (parameter-shift gradients) and re-draw the CX frontier with that cost.</li>
+        <li>Repeat IonQ runs per circuit, on noise models and then on hardware, so the measured error has a distribution rather than three samples.</li>
+      </ol>
+      <p>What can be claimed today: one-shot generation proposes accurate circuits with zero quantum evaluations inside the training range; fixing the orbital sign gauge is what makes that possible; a simple regressor does as well as the transformer; RL did not improve held-out error; and on IonQ's noise models, gate count dominates. What cannot be claimed: that the transformer beats simpler regressors here, any wall-clock speedup at 2–8 qubits, extrapolation beyond the training range, or quantum advantage.</p>
+
+      <div class="foot wide">
+        <a href="benchmarks.html">Every per-system table →</a>
+        <a href="demo.html">Demo video and how to run</a>
+        <a href="https://qollab.xyz/u/udsy/genqai-one-shot-quantum-chemis" target="_blank" rel="noopener noreferrer">Run it on Qollab</a>
+        <a href="https://github.com/udsy19/genqai" target="_blank" rel="noopener noreferrer">Source, data and checkpoints</a>
+        <a href="https://github.com/udsy19/genqai/tree/main/figures" target="_blank" rel="noopener noreferrer">Matplotlib figures (PNG, PDF)</a>
+      </div>
+      <div class="attrib wide">
+        <p><b>This effort is supported by Qollab &amp; IonQ.</b></p>
+        <p>All code was written during the hackathon window, with no starter code, and developed with AI coding assistants (Claude Code). Inspired by the Quantinuum / NVIDIA / Pfizer ADAPT-GQE work and ADAPT-VQE (Grimsley et al., 2019). Built on Qiskit, Qiskit Nature, PySCF, qiskit-ionq and NumPy/SciPy. Design ideas (no code) came from Conditional_GQE, gqe-for-qsci, the PennyLane GQE demo and nanoGPT; licences are in <a href="https://github.com/udsy19/genqai/blob/main/ATTRIBUTION.md" target="_blank" rel="noopener noreferrer">ATTRIBUTION.md</a>.</p>
+      </div>
+
+    </article></div>
+  </main>
+</div>
+
+<script src="data.js"></script>
 <script>
-  (function () {
-    var v = document.querySelector('#demo video');
-    var note = document.getElementById('video-note');
-    if (!v || !note) return;
-    function missing() { note.hidden = false; v.closest('.video-frame').classList.add('is-missing'); }
-    v.addEventListener('error', missing);
-    if (v.error) missing();
-  })();
+/* Every number drawn below comes from DATA (site/data.js), generated by scripts/make_site_data.py from the result files. */
+const NS = "http://www.w3.org/2000/svg";
+const INK = "#0a0a0a", COBALT = "#1e2edc", SIGNAL = "#e0492a", SKY = "#7fb2e8", PAPER = "#efedea";
+const SANS = "Inter, sans-serif";
+const el = (tag, attrs = {}, text) => {
+  const n = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+  if (text !== undefined) n.textContent = text;
+  return n;
+};
+const svgIn = (id, w, h, label) => {
+  const s = el("svg", { viewBox: `0 0 ${w} ${h}`, role: "img", "aria-label": label });
+  s.style.fontFamily = '"Geist Mono", ui-monospace, monospace';
+  document.getElementById(id).appendChild(s);
+  return s;
+};
+const axisText = (s, x, y, t, anchor = "middle", size = 9.5, fill = INK, extra = {}) =>
+  s.appendChild(el("text", { x, y, "text-anchor": anchor, "font-size": size, fill, ...extra }, t));
+const line = (s, x1, y1, x2, y2, extra = {}) => s.appendChild(el("line", { x1, y1, x2, y2, stroke: INK, ...extra }));
+const sup = { "-6": "⁻⁶", "-5": "⁻⁵", "-4": "⁻⁴", "-3": "⁻³", "-2": "⁻²", "-1": "⁻¹" };
+const decade = (k) => (k >= 0 ? String(10 ** k) : "10" + sup[k]);
+const colorOf = (m) => m.startsWith("sft") ? COBALT : m === "angle_regression" ? SIGNAL : m.startsWith("nn") ? SKY : INK;
+const dot = (s, cx, cy, r, fill, extra = {}) =>
+  s.appendChild(el("circle", { cx, cy, r, fill, ...(fill === SKY ? { stroke: INK, "stroke-width": 0.6 } : {}), ...extra }));
+
+/* Figure 3: H4 test_fresh, one dot per geometry, log |err|. */
+(function () {
+  const rows = DATA.h4Strip, W = 740, rowH = 25, L = 232, R = 112, T = 30, B = 34, H = T + rowH * rows.length + B;
+  const s = svgIn("fig-strip", W, H, "Absolute error per untouched H4 geometry for ten methods, log scale, with median, quantum evaluations and share within chemical accuracy");
+  const lo = -4, hi = 3, x = (v) => L + (Math.log10(Math.max(v, 10 ** lo)) - lo) / (hi - lo) * (W - L - R);
+  s.appendChild(el("rect", { x: L, y: T - 6, width: x(DATA.chemAcc) - L, height: rowH * rows.length + 6, fill: SKY, "fill-opacity": 0.28 }));
+  axisText(s, x(DATA.chemAcc) - 4, T - 10, "≤ 1.6 mHa", "end", 8.5, INK, { "fill-opacity": 0.7 });
+  for (let k = lo; k <= hi; k++) {
+    line(s, x(10 ** k), T - 6, x(10 ** k), H - B, { "stroke-opacity": 0.12 });
+    axisText(s, x(10 ** k), H - B + 14, k === lo ? "≤" + decade(k) : decade(k), "middle", 9, INK, { "fill-opacity": 0.6 });
+  }
+  axisText(s, (L + W - R) / 2, H - 4, "|E − E_FCI|, mHa (log)", "middle", 9, INK, { "fill-opacity": 0.6 });
+  axisText(s, W - R + 40, T - 10, "EVALS", "end", 8, INK, { "fill-opacity": 0.6 });
+  axisText(s, W - 4, T - 10, "≤ 1.6", "end", 8, INK, { "fill-opacity": 0.6 });
+  rows.forEach((r, i) => {
+    const y = T + rowH * i + rowH / 2, col = colorOf(r.m);
+    line(s, L, y + rowH / 2, W, y + rowH / 2, { "stroke-opacity": 0.06 });
+    axisText(s, L - 10, y + 3.5, r.label.replace(", one shot", " · one shot"), "end", 10, INK, { "font-family": SANS });
+    r.errs.forEach((v, j) => dot(s, x(v), y + ((j % 3) - 1) * 4, 3, col, { "fill-opacity": 0.75 }));
+    line(s, x(r.median), y - 9, x(r.median), y + 9, { "stroke-width": 1.6 });
+    axisText(s, W - R + 40, y + 3.5, r.evals, "end", 9.5, r.evals === 0 ? COBALT : INK);
+    axisText(s, W - 4, y + 3.5, Math.round(r.within * 100) + "%", "end", 9.5);
+  });
+  line(s, L, H - B, W - R, H - B, { "stroke-opacity": 0.5 });
+})();
+
+/* Figure 4: learning curves, one log-log panel per system. */
+(function () {
+  const W = 740, H = 270, T = 26, B = 52, gap = 46, pw = (W - 54 - gap - 12) / 2;
+  const s = svgIn("fig-learn", W, H, "Median test_fresh error against number of training geometries for the transformer, kernel ridge and nearest-neighbour copy, on H4 and LiH 6-qubit");
+  const series = [["sft_oneshot", COBALT], ["angle_regression", SIGNAL], ["nn_reuse_gauge", SKY]];
+  [["h4", "H₄ chain · 8 qubits · 20 geometries"], ["lih6", "LiH · 6 qubits · 14 geometries"]].forEach(([sys, title], p) => {
+    const d = DATA.learning[sys], L = 54 + p * (pw + gap), Rx = L + pw;
+    const all = Object.values(d.series).flat().flatMap((q) => [q.lo, q.hi]);
+    const ylo = Math.floor(Math.log10(Math.min(...all))), yhi = Math.ceil(Math.log10(Math.max(...all, DATA.chemAcc)));
+    const y = (v) => H - B - (Math.log10(v) - ylo) / (yhi - ylo) * (H - B - T);
+    const nlo = Math.log10(d.n[0]), nhi = Math.log10(d.n[d.n.length - 1]);
+    const x = (n) => L + 14 + (Math.log10(n) - nlo) / (nhi - nlo) * (pw - 28);
+    axisText(s, L, T - 10, title, "start", 10, INK, { "font-family": SANS });
+    for (let k = ylo; k <= yhi; k++) {
+      line(s, L, y(10 ** k), Rx, y(10 ** k), { "stroke-opacity": 0.12 });
+      axisText(s, L - 6, y(10 ** k) + 3, decade(k), "end", 9, INK, { "fill-opacity": 0.6 });
+    }
+    line(s, L, y(DATA.chemAcc), Rx, y(DATA.chemAcc), { stroke: SIGNAL, "stroke-dasharray": "3 3", "stroke-opacity": 0.8 });
+    axisText(s, Rx, y(DATA.chemAcc) - 4, "1.6 mHa", "end", 8.5, SIGNAL);
+    series.forEach(([m, col]) => {
+      const pts = d.series[m];
+      s.appendChild(el("path", { d: pts.map((q, i) => `${i ? "L" : "M"}${x(d.n[i])},${y(q.mid)}`).join(" "), fill: "none", stroke: col, "stroke-width": 2 }));
+      pts.forEach((q, i) => {
+        line(s, x(d.n[i]), y(q.lo), x(d.n[i]), y(q.hi), { stroke: col, "stroke-width": 1, "stroke-opacity": 0.6 });
+        dot(s, x(d.n[i]), y(q.mid), 3.5, col);
+      });
+    });
+    d.n.forEach((n, i) => {
+      axisText(s, x(n), H - B + 15, "N=" + n, "middle", 9);
+      axisText(s, x(n), H - B + 27, (d.teacher[i] / 1000).toFixed(1) + "k", "middle", 8, INK, { "fill-opacity": 0.6 });
+    });
+    line(s, L, H - B, Rx, H - B, { "stroke-opacity": 0.5 });
+    if (p === 0) axisText(s, 12, (T + H - B) / 2, "median |err|, mHa", "middle", 8.5, INK, { "fill-opacity": 0.6, transform: `rotate(-90 12 ${(T + H - B) / 2})` });
+  });
+  axisText(s, W / 2, H - 6, "training geometries N (log) · below: teacher ADAPT evaluations to label them", "middle", 8.5, INK, { "fill-opacity": 0.6 });
+})();
+
+/* Figure 5: share within 1.6 mHa against CX, frontier lines plus prune + refine. */
+(function () {
+  const W = 740, H = 290, T = 40, B = 42, gap = 46, pw = (W - 46 - gap - 12) / 2;
+  const s = svgIn("fig-front", W, H, "Share of untouched geometries within chemical accuracy against CX count for kernel ridge prefixes, truncated ADAPT, the budget policy, and prune plus refine, on H4 and LiH 6-qubit");
+  [["h4", "H₄ chain · test_fresh"], ["lih6", "LiH · 6 qubits · test_fresh"]].forEach(([sys, title], p) => {
+    const f = DATA.frontier[sys], L = 46 + p * (pw + gap), Rx = L + pw;
+    const cxMax = Math.ceil(Math.max(...Object.values(f.curves).flat().map((q) => q.cx), f.prune.sft_oracle.startCx) / 100) * 100;
+    const x = (v) => L + v / cxMax * pw, y = (v) => H - B - v * (H - B - T);
+    axisText(s, L, T - 24, title, "start", 10, INK, { "font-family": SANS });
+    [0, 0.25, 0.5, 0.75, 1].forEach((t) => {
+      line(s, L, y(t), Rx, y(t), { "stroke-opacity": 0.12 });
+      axisText(s, L - 6, y(t) + 3, Math.round(t * 100) + "%", "end", 9, INK, { "fill-opacity": 0.6 });
+    });
+    for (let c = 0; c <= cxMax; c += cxMax > 500 ? 200 : 100) axisText(s, x(c), H - B + 14, c, "middle", 9, INK, { "fill-opacity": 0.6 });
+    [["regress_prefix", SIGNAL, ""], ["adapt", INK, "4 3"], ["budget", COBALT, ""]].forEach(([c, col, dash]) => {
+      const pts = f.curves[c];
+      s.appendChild(el("path", { d: pts.map((q, i) => `${i ? "L" : "M"}${x(q.cx)},${y(q.within)}`).join(" "), fill: "none", stroke: col, "stroke-width": 1.8, "stroke-dasharray": dash }));
+      pts.forEach((q) => dot(s, x(q.cx), y(q.within), 2.6, col));
+    });
+    const o = f.prune.sft_oracle, b = f.prune.sft_blind, k = f.prune.krr_oracle;
+    dot(s, x(o.startCx), y(o.startWithin), 5, "none", { stroke: COBALT, "stroke-width": 1.6 });
+    dot(s, x(k.startCx), y(k.startWithin), 5, "none", { stroke: SIGNAL, "stroke-width": 1.6 });
+    s.appendChild(el("path", { d: `M${x(o.startCx) - 6},${y(o.startWithin) + 3} L${x(o.cx) + 8},${y(o.within) + 3}`, stroke: INK, "stroke-opacity": 0.55, fill: "none", "marker-end": "url(#ah2)" }));
+    const dia = (cx, cy, fill) => s.appendChild(el("path", { d: `M${cx},${cy - 6} L${cx + 6},${cy} L${cx},${cy + 6} L${cx - 6},${cy} Z`, fill, stroke: INK, "stroke-width": 1 }));
+    dia(x(b.cx), y(b.within), PAPER);
+    dia(x(o.cx), y(o.within), SKY);
+    const lx = Math.min(x(o.cx), x(b.cx)) - 12;
+    axisText(s, lx, y(o.within) + 4, "prune + refine", "end", 8.5);
+    axisText(s, lx, y(o.within) + 15, `${Math.round(o.evals).toLocaleString("en")} energy evals`, "end", 8.5, INK, { "fill-opacity": 0.7 });
+    line(s, L, H - B, Rx, H - B, { "stroke-opacity": 0.5 });
+  });
+  const defs = el("defs");
+  const mk = el("marker", { id: "ah2", viewBox: "0 0 8 8", refX: 7, refY: 4, markerWidth: 6, markerHeight: 6, orient: "auto" });
+  mk.appendChild(el("path", { d: "M0,0 L8,4 L0,8 z", fill: INK, "fill-opacity": 0.55 }));
+  defs.appendChild(mk); s.insertBefore(defs, s.firstChild);
+  axisText(s, W / 2, H - 6, "mean compiled CX count (Qiskit CX basis)", "middle", 8.5, INK, { "fill-opacity": 0.6 });
+})();
+
+/* Figure 6: IonQ noise-model runs, error bars on a broken linear axis. */
+(function () {
+  const order = (r) => (r.label.startsWith("H₂ · r = 1.33") ? 0 : r.label.startsWith("H₂") ? 1 : r.label.startsWith("HeH") ? 2 : 3);
+  const rows = [...DATA.ionq].sort((a, b) => order(a) - order(b));
+  const W = 740, rowH = 30, L = 236, R = 16, T = 22, B = 34, H = T + rowH * rows.length + B, w = W - L - R;
+  const s = svgIn("fig-ionq", W, H, "Measured energy minus exact energy with standard errors for each IonQ noise-model run: H2 runs within tens of mHa, LiH runs about 460 mHa off");
+  const A = [-10, 60], Bseg = [400, 520], wa = 0.72 * w, gb = 0.06 * w, wb = w - wa - gb;
+  const x = (v) => v <= A[1] ? L + (v - A[0]) / (A[1] - A[0]) * wa : L + wa + gb + (v - Bseg[0]) / (Bseg[1] - Bseg[0]) * wb;
+  s.appendChild(el("rect", { x: x(-DATA.chemAcc), y: T - 6, width: x(DATA.chemAcc) - x(-DATA.chemAcc), height: rowH * rows.length + 6, fill: SKY, "fill-opacity": 0.45 }));
+  [-10, 0, 10, 20, 30, 40, 50, 60, 400, 450, 500].forEach((t) => {
+    line(s, x(t), T - 6, x(t), H - B, { "stroke-opacity": t === 0 ? 0.6 : 0.12 });
+    axisText(s, x(t), H - B + 14, (t > 0 ? "+" : "") + t, "middle", 9, INK, { "fill-opacity": 0.6 });
+  });
+  const bx = L + wa + gb / 2;
+  s.appendChild(el("path", { d: `M${bx - 7},${H - B + 4} L${bx - 1},${H - B - 4} M${bx + 1},${H - B + 4} L${bx + 7},${H - B - 4}`, stroke: INK, "stroke-width": 1.2, fill: "none" }));
+  axisText(s, (L + W - R) / 2, H - 4, "E − E_FCI, mHa (linear, broken between +60 and +400)", "middle", 9, INK, { "fill-opacity": 0.6 });
+  rows.forEach((r, i) => {
+    const y = T + rowH * i + rowH / 2;
+    const col = r.backend.startsWith("Qollab") ? SIGNAL : r.backend.includes("Forte") ? COBALT : INK;
+    line(s, L, y + rowH / 2, W - R, y + rowH / 2, { "stroke-opacity": 0.06 });
+    axisText(s, L - 10, y - 1, r.label, "end", 10, INK, { "font-family": SANS });
+    axisText(s, L - 10, y + 10, r.backend.replace(" noise model", "").replace("IonQ ", ""), "end", 8, INK, { "fill-opacity": 0.6 });
+    line(s, x(r.err - r.se), y, x(r.err + r.se), y, { stroke: col, "stroke-width": 1.6 });
+    [r.err - r.se, r.err + r.se].forEach((v) => line(s, x(v), y - 4, x(v), y + 4, { stroke: col, "stroke-width": 1.6 }));
+    dot(s, x(r.err), y, 4, col);
+    const right = x(r.err + r.se) + 6, lab = `${r.err >= 0 ? "+" : ""}${r.err.toFixed(1)} ± ${r.se.toFixed(1)}`;
+    if (right > W - 70) axisText(s, x(r.err - r.se) - 6, y + 3.5, lab, "end", 9, col);
+    else axisText(s, right, y + 3.5, lab, "start", 9, col);
+  });
+})();
 </script>
 </body>
 </html>

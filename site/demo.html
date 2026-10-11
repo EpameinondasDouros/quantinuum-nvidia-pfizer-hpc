@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Demo — GenQAI</title>
+  <meta name="description" content="The GenQAI demo video, how to run the project on Qollab in the browser, and the local Streamlit workbench for any small molecule.">
+  <meta property="og:type" content="video.other">
+  <meta property="og:title" content="GenQAI demo: one-shot circuits, run on Qollab and IonQ">
+  <meta property="og:description" content="A 2:23 demo over real Qollab and IonQ runs, and how to run it yourself.">
+  <meta property="og:url" content="https://udsy19.github.io/genqai/demo.html">
+  <meta property="og:image" content="https://udsy19.github.io/genqai/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://udsy19.github.io/genqai/og.png">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230a0a0a'/%3E%3Cpath d='M4 11h24M4 21h24' stroke='%23efedea' stroke-opacity='.5' stroke-width='2'/%3E%3Crect x='11' y='6' width='10' height='20' fill='%231e2edc'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to the demo</a>
+<div class="app">
+  <header class="band">
+    <a class="wordmark" href="./">GenQAI</a>
+    <nav class="band-nav" aria-label="Pages">
+      <a href="./" class="band-link">Paper</a>
+      <a href="benchmarks.html" class="band-link">Benchmarks</a>
+      <a href="demo.html" class="band-link on" aria-current="page">Demo</a>
+    </nav>
+    <div class="band-right">
+      <a class="repo-link meta run" href="https://qollab.xyz/u/udsy/genqai-one-shot-quantum-chemis" target="_blank" rel="noopener noreferrer">Run on Qollab</a>
+      <a class="repo-link meta" href="https://github.com/udsy19/genqai" target="_blank" rel="noopener noreferrer">Open source</a>
+    </div>
+  </header>
+
+  <main class="desk" id="main">
+    <div class="sheet"><article class="paper">
+      <div class="topline"><span class="meta">DEMO · 2:23</span><span class="meta">REAL QOLLAB AND IONQ RUNS</span></div>
+
+      <div class="titleblock">
+        <h1>Run it: the demo, Qollab in the browser, and the local workbench</h1>
+        <div class="byline">Team The Quantubians</div>
+        <span class="meta">Qollab × IonQ Global Quantum Hackathon · October 2026</span>
+      </div>
+
+      <figure class="wide">
+        <div class="video">
+          <video controls preload="metadata" playsinline poster="cover.png" width="1600" height="900" aria-label="GenQAI demo video, 2 minutes 23 seconds">
+            <source src="demo.mp4" type="video/mp4">
+            Your browser can't play this video. <a href="demo.mp4">Download demo.mp4</a>.
+          </video>
+        </div>
+        <figcaption><b>Video.</b> Narration over real Qollab and IonQ Forte 1 run screenshots, workbench screenshots and the committed figures. Also on <a href="https://drive.google.com/file/d/1oOhMOhFqhNBd3pZ_hhlYvR5wS0-tAtYF/view" target="_blank" rel="noopener noreferrer">Google Drive</a>, or <a href="demo.mp4" download>download the MP4</a>.</figcaption>
+      </figure>
+
+      <h2><span class="num">1.</span> Run it on Qollab</h2>
+      <p>The <a href="https://qollab.xyz/u/udsy/genqai-one-shot-quantum-chemis" target="_blank" rel="noopener noreferrer">Qollab project</a> runs in your browser on Pyodide, with no server. Press Run, pick a backend, fill in the form, and it:</p>
+      <ol class="steps">
+        <li><span class="k">01</span><div>builds the molecular Hamiltonian for the bond length you type, live with PySCF, and prints the Hartree–Fock and exact FCI energies;</div></li>
+        <li><span class="k">02</span><div>generates the circuit with the trained model (NumPy, about 20 ms), with zero quantum evaluations to propose it;</div></li>
+        <li><span class="k">03</span><div>scores it exactly against FCI, next to kernel-ridge regression, nearest-neighbour reuse and a live ADAPT-VQE run with the quantum evaluations ADAPT needed;</div></li>
+        <li><span class="k">04</span><div>measures its energy on the backend you chose, with every measurement basis packed onto separate qubits of one circuit (H₂: 2 groups on 4 qubits), because Qollab's IonQ gateway takes one single-circuit job per run.</div></li>
+      </ol>
+      <div class="scroll wide" role="region" tabindex="0" aria-label="Run form fields">
+        <div class="tcap">The run form · def main(system: str, r: float, a: float, b: float, shots: int, live_adapt: bool)</div>
+        <table class="bench">
+          <thead><tr><th scope="col">Field</th><th scope="col">What it is</th></tr></thead>
+          <tbody>
+            <tr><td><code>system</code></td><td><code>h2</code> (2 qubits), <code>lih4</code> (4), <code>lih6</code> (6) or <code>h4</code> (8; uses <code>a</code>, <code>b</code>, the chain spacings a-b-a)</td></tr>
+            <tr><td><code>r</code></td><td>The bond length in Å, any value</td></tr>
+            <tr><td><code>a</code>, <code>b</code></td><td>H₄ chain spacings in Å</td></tr>
+            <tr><td><code>shots</code></td><td>Shots per measurement group</td></tr>
+            <tr><td><code>live_adapt</code></td><td>Also run ADAPT-VQE for the cost comparison</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <ul>
+        <li><b>Backend.</b> The built-in simulator (instant) or a free IonQ noise-model simulator (Forte 1, Aria); IonQ takes about 15 s. Paid hardware is never needed.</li>
+        <li><b>IonQ fits H₂ only.</b> Packed measurement needs groups × qubits ≤ 29; the other systems need more, and the program says so. Use the built-in simulator for them.</li>
+        <li><b>Browser.</b> Qollab needs WebAssembly JSPI (recent Chrome or Edge). If a second run straight after another fails with "file was not loaded … I/O error", reload the page and run again.</li>
+        <li><b>Measured.</b> H₂ at r = 1.33 Å took 6.3 s end to end on the built-in simulator and 18.2 s on the IonQ Forte 1 simulator (IonQ 11.8 s), with live PySCF 0.3 s and the NumPy transformer 20 ms.</li>
+      </ul>
+
+      <h2><span class="num">2.</span> The workbench, for any small molecule</h2>
+      <p>The repository also ships a local Streamlit workbench (<code>streamlit run app/workbench.py</code>) built around the same idea. Enter a molecule as a preset, SMILES, XYZ or coordinates; it builds the active-space Hamiltonian, decides whether a trained model actually covers the problem, proposes a complete circuit, grades it independently, optionally optimises it, runs it on a simulator or IonQ's cloud simulators, and exports everything.</p>
+      <div class="scroll wide" role="region" tabindex="0" aria-label="Workbench steps">
+        <div class="tcap">Workbench steps · README.md</div>
+        <table class="bench">
+          <thead><tr><th scope="col">Step</th><th scope="col">What happens</th><th scope="col">Code</th></tr></thead>
+          <tbody>
+            <tr><td>Molecule</td><td>Preset, SMILES (RDKit ETKDGv3, seeded conformers, optional MMFF/UFF), XYZ (kept verbatim) or atom table; charge, multiplicity, basis, frozen core, active space and mapping, all validated. Open shells use ROHF.</td><td><code>genqai/molecule.py</code></td></tr>
+            <tr><td>Capability report</td><td>Formula, electrons, qubits, whether exact FCI is feasible, packed IonQ width. "Input accepted", "Hamiltonian built", "trained model covers it", "fallback available" and "backend can run it" are separate answers.</td><td><code>molecule.assess</code></td></tr>
+            <tr><td>Hamiltonian</td><td>Frozen-core active space from one RHF, FCI by sector diagonalisation, CCSD where available. Presets reproduce the committed data exactly.</td><td><code>genqai/chemistry.py</code></td></tr>
+            <tr><td>Routing</td><td><b>A</b>: a trained model covers it, inside the validated range. <b>B</b>: compatible but out of range, labelled experimental, refine or ADAPT recommended. <b>C</b>: no compatible model, so ADAPT or UCCSD runs. <b>D</b>: too big, with suggestions instead of a silently smaller problem. The default method is the best on validation, which is kernel ridge on every trained system.</td><td><code>genqai/registry.py</code></td></tr>
+            <tr><td>Generate</td><td>Transformer (SFT / GRPO / budget), kernel ridge, nearest-neighbour, ADAPT, UCCSD, with "+refine" and best-of-K; each run logs forward passes, candidates and quantum evaluations to propose.</td><td><code>genqai/generate.py</code></td></tr>
+            <tr><td>Grade</td><td>Validity (qubits, operators, finite angles, norm, particle number and S<sub>z</sub>, no energy below the exact ground state) and accuracy against FCI, or labelled unverified; then resources (gates, CX, depth, IonQ-native counts, measurement groups, shots for a target error) ranked on a Pareto front among circuits that meet the target.</td><td><code>genqai/grading.py</code></td></tr>
+            <tr><td>Optimise</td><td>Angle refinement, exact merging of repeated operators, operator pruning with re-refinement, transpiler level 3, noise-aware selection. The original is kept.</td><td><code>genqai/optimize.py</code></td></tr>
+            <tr><td>Execute</td><td>Statevector, local shots, local noisy (our own approximation), IonQ cloud simulators (ideal, Forte 1, Aria 1). Width is checked before anything is submitted.</td><td><code>genqai/execution.py</code></td></tr>
+            <tr><td>Export</td><td>Qiskit script (reproduces the statevector to 10⁻¹⁰), OpenQASM 2/3, Hamiltonian and metadata JSON, measurement and benchmark CSV; experiments saved locally with a configuration hash.</td><td><code>genqai/export.py</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Worked examples that run end to end: HeH⁺ from XYZ, water from SMILES and the OH radical (open shell) go to path C, and ADAPT reaches FCI on each (<a href="benchmarks.html#custom">table</a>). H₂ typed in by hand along any axis is recognised as the trained H₂ family (path A, kernel ridge). LiH beyond 4 Å goes to path B, labelled experimental. The test suite: 222 passed, 4 skipped.</p>
+
+      <h2><span class="num">3.</span> Run it locally</h2>
+      <div class="scroll wide" role="region" tabindex="0" aria-label="Commands">
+        <div class="tcap">Commands · README.md</div>
+        <table class="bench">
+          <thead><tr><th scope="col">Command</th><th scope="col">What it does</th></tr></thead>
+          <tbody>
+            <tr><td><code>uv venv -p 3.12 .venv &amp;&amp; uv pip install -p .venv/bin/python -e ".[dev]"</code></td><td>Install</td></tr>
+            <tr><td><code>.venv/bin/streamlit run app/workbench.py</code></td><td>The workbench</td></tr>
+            <tr><td><code>.venv/bin/python scripts/run_pipeline.py --quick</code></td><td>H₂ and LiH from scratch, about 90 s</td></tr>
+            <tr><td><code>.venv/bin/python scripts/demo.py --system lih4 --geometry 2.47 [--ionq]</code></td><td>One geometry end to end, optionally on IonQ (needs <code>IONQ_API_KEY</code>)</td></tr>
+            <tr><td><code>.venv/bin/python scripts/report_fair.py</code></td><td>The test and test_fresh tables</td></tr>
+            <tr><td><code>.venv/bin/python -m scripts.make_site_data</code></td><td>This site's tables and chart data, from the result files</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="foot wide">
+        <a href="./">The working paper →</a>
+        <a href="benchmarks.html">Every table</a>
+        <a href="https://qollab.xyz/u/udsy/genqai-one-shot-quantum-chemis" target="_blank" rel="noopener noreferrer">Qollab project</a>
+        <a href="https://github.com/udsy19/genqai" target="_blank" rel="noopener noreferrer">Source on GitHub</a>
+      </div>
+      <div class="attrib wide">
+        <p><b>This effort is supported by Qollab &amp; IonQ.</b></p>
+        <p>Developed during the hackathon window with AI coding assistants (Claude Code). MIT licence; reused components and licences are listed in <a href="https://github.com/udsy19/genqai/blob/main/ATTRIBUTION.md" target="_blank" rel="noopener noreferrer">ATTRIBUTION.md</a>.</p>
+      </div>
+    </article></div>
+  </main>
+</div>
+</body>
+</html>
