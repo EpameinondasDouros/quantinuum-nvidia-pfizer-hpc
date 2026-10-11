@@ -34,8 +34,7 @@ class OperatorPool:
 @lru_cache(maxsize=None)
 def get_pool(system: str) -> OperatorPool:
     spec = SYSTEMS[system]
-    n = spec.active_electrons // 2
-    u = UCCSD(spec.num_active_orbitals, (n, n), mapper_for(spec))
+    u = UCCSD(spec.num_active_orbitals, spec.nelec, mapper_for(spec))
     gens = []
     for op in u.operators:
         op = op.simplify(atol=1e-12)

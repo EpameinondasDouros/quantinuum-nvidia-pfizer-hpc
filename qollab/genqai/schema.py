@@ -48,6 +48,25 @@ class HamiltonianRecord:
     fci_energy: float
     software_versions: dict[str, str] = field(default_factory=dict)
     split: str = ""  # "train" | "val" | "test_interp" | "test_interval" | "test_extrap"
+    charge: int = 0
+    multiplicity: int = 1
+    num_alpha: int = -1  # -1 = closed shell: active_electrons / 2 each (see nelec)
+    num_beta: int = -1
+    problem_key: str = ""  # genqai.molecule.ProblemConfig.key when built through the workbench
+    reference_method: str = "FCI"  # "FCI" | "CCSD" | "HF". fci_energy is NaN unless "FCI" (sector too big
+    # for exact diagonalisation); only an "FCI" reference may be called exact
+
+    @property
+    def nelec(self) -> tuple[int, int]:
+        """Active (n_alpha, n_beta)."""
+        if self.num_alpha < 0:
+            return self.active_electrons // 2, self.active_electrons // 2
+        return self.num_alpha, self.num_beta
+
+    @property
+    def reference_energy(self) -> float:
+        """Best stored reference energy, named by reference_method (FCI, else CCSD, else HF)."""
+        return {"FCI": self.fci_energy, "CCSD": self.ccsd_energy, "HF": self.hf_energy}[self.reference_method]
 
     def sparse_pauli_op(self):
         from qiskit.quantum_info import SparsePauliOp
