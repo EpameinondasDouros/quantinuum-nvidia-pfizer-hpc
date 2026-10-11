@@ -18,10 +18,10 @@ Branches: one per task or lane, named `feat/<short-name>`. Only merge to main af
 
 | ID | Task | Owner | Status | Where | Notes |
 | --- | --- | --- | --- | --- | --- |
-| W-A | Arbitrary molecules: SMILES (RDKit ETKDGv3, seeded), XYZ, atoms, presets; charge/multiplicity/basis/active space/mapping; open shell; capability report; generic Hamiltonian | Udaya (agent) | 🟨 | `feat/molecule` | Presets must stay byte-identical |
-| W-B | Model registry + routing (paths A/B/C/D) + unified generation API; default method chosen on VAL metrics | Udaya (agent) | 🟨 | `feat/registry` | KRR is the default where it validates better. Never hide it |
+| W-A | Arbitrary molecules: SMILES (RDKit ETKDGv3, seeded), XYZ, atoms, presets; charge/multiplicity/basis/active space/mapping; open shell; capability report; generic Hamiltonian | Udaya (agent) | ✅ | main `genqai/molecule.py` | SMILES (ETKDGv3, seeded), XYZ, atoms, presets; open shell (ROHF); capability report; presets byte-identical. HeH⁺, H₂O (SMILES), OH• FCI = PySCF CASCI to 1e-8 |
+| W-B | Model registry + routing (paths A/B/C/D) + unified generation API; default method chosen on VAL metrics | Udaya (agent) | ✅ | main `genqai/registry.py`, `genqai/generate.py`, `models/registry.json` | 21 model cards; default = best VAL (KRR on every system); paths A/B/C/D; gauge check on rotated H₄: 80 coefficient sign flips absorbed, energies equal to 1e-12 mHa |
 | W-C | Circuit grading engine (validity, energy, resources, noise), two-stage ranking + Pareto, optimization (refine, prune, transpile, budget model); hardware-aware Pareto study vs KRR prefixes | Udaya (agent) | 🟨 | `feat/grading` | Report a null result if there's no improvement |
-| W-D | Backend registry, generalized packed single-circuit measurement, analytic measurement tests, execution records with provenance | Udaya (agent) | 🟨 | `feat/backends` | Width check before submission; no paid jobs |
+| W-D | Backend registry, generalized packed single-circuit measurement, analytic measurement tests, execution records with provenance | Udaya (agent) | ✅ | main `genqai/backends.py`, `genqai/execution.py` | Packed = grouped = statevector to 1e-12 on analytic Hamiltonians; stderr coverage 65–70% at 1σ; width refusal before submit; live IonQ Forte 1 sim h2 r=0.8: +25.0 ± 6.4 mHa (job 01a12845-095c-73f9-b107-03d2aa0cef79) |
 | W-E | Streamlit workbench, exports (Qiskit code, QASM, JSON, CSV), experiment store, job runner | Udaya (agent) | 🟨 | `feat/workbench` | Runs locally; Qollab keeps its main.py path |
 | W-F | Integration, regression checks, README, figures, Qollab bundle, submission text, video script | Udaya | 🟨 | main | Never publish |
 
