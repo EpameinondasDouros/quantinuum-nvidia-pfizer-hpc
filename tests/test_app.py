@@ -75,6 +75,22 @@ def test_smiles_input_renders():
     _ok(at)
 
 
+def test_xyz_h2_routes_to_trained_model():
+    if services.lane("molecule") is None or services.lane("registry") is None:
+        pytest.skip("XYZ input needs genqai.molecule (Lane A) and routing needs genqai.registry (Lane B)")
+    at = _ok(AppTest.from_file(APP, default_timeout=180).run())
+    at.radio(key="mol_source").set_value("XYZ").run()
+    at.text_area(key="xyz_text").set_value("2\nH2\nH 0 0 0\nH 0 0 0.9\n").run()
+    _ok(at)
+    caps = next(df.value for df in at.dataframe if "capability" in df.value.columns).set_index("capability")
+    assert caps.loc["Input accepted", "state"] == "yes" and caps.loc["Hamiltonian built", "state"] == "no"
+    at.button(key="build_btn").click().run()
+    _ok(at)
+    caps = next(df.value for df in at.dataframe if "capability" in df.value.columns).set_index("capability")
+    assert caps.loc["Trained-model inference", "state"] == "yes" and "path A" in caps.loc["Trained-model inference",
+                                                                                          "detail"]
+
+
 def test_benchmarks_tab_shows_committed_results():
     at = _ok(AppTest.from_file(APP, default_timeout=120).run())
     assert any("committed results" in c.value for c in at.caption)

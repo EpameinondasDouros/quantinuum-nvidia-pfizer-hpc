@@ -176,8 +176,9 @@ def grade_job(ctx, record, circuit, log: dict | None, target_mha: float, shots, 
         e = score_circuit(record, circuit, circuit.source or "circuit",
                           model_forward_passes=(log or {}).get("forward_passes", 0))
         return {"basic": True, "status": "valid" if circuit.valid else "invalid",
-                "energy": {"energy": e.energy, "reference": record.fci_energy, "reference_kind": "FCI",
-                           "error_mha": e.error_mha},
+                "energy": {"energy": e.energy, "reference": record.reference_energy,
+                           "reference_kind": record.reference_method,
+                           "error_mha": 1000.0 * (e.energy - record.reference_energy)},
                 "resources": {"qubits": record.num_qubits, "ops": e.num_operators, "cx_qiskit": e.cnot_count,
                               "depth": e.depth},
                 "cost": {"quantum_evals_to_propose": (log or {}).get("quantum_evals_to_propose")}}

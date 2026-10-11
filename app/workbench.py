@@ -421,7 +421,8 @@ def molecule_tab() -> None:
         tuple(r.geometry_params.values()) == tuple(float(p) for p in preset[1]))
     if r is not None:
         st.success(f"Current Hamiltonian: {r.system} {r.geometry_params or ''} | {r.num_qubits} qubits | "
-                   f"FCI {r.fci_energy:.6f} Ha | HF {r.hf_energy:.6f} Ha | {s.get('record_how', '')}")
+                   f"{r.reference_method} reference {r.reference_energy:.6f} Ha | HF {r.hf_energy:.6f} Ha | "
+                   f"{s.get('record_how', '')}")
         if not current:
             st.info("The current Hamiltonian (used by Generate, Grade and Execute) was built from a different "
                     "input. Press 'Build Hamiltonian' to switch to this one.")
@@ -694,7 +695,9 @@ def execute_tab() -> None:
                             "energy": e.get("energy"), "stderr": 0.0, "error_mha": e.get("error_mha"),
                             "status": "computed"})
         st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch")
-        st.caption(f"Reference FCI energy {rec.fci_energy:.6f} Ha. Ideal vs noisy: compare rows by noise_model.")
+        st.caption(f"{rec.reference_method} reference energy {rec.reference_energy:.6f} Ha"
+                   f"{'' if rec.reference_method == 'FCI' else ' (not exact)'}. Ideal vs noisy: compare rows by "
+                   "noise_model.")
 
 
 # ------------------------------------------------------------------ Benchmarks

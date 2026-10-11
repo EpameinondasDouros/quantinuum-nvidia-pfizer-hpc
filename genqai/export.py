@@ -79,7 +79,8 @@ def qiskit_code(record: HamiltonianRecord, circuit: GeneratedCircuit) -> str:
         f"system={record.system}  geometry_id={record.geometry_id}  geometry={record.geometry_params}",
         f"source={circuit.source or '-'}  operators={len(circuit.operators)}  qubits={n}",
         "Circuit = HF state, then prod_t exp(-i * angle_t * G_t) in list order (Pauli labels: qubit 0 rightmost).",
-        f"FCI reference energy: {record.fci_energy!r} Ha; energy_shift: {record.energy_shift!r} Ha.",
+        f"{record.reference_method} reference energy: {record.reference_energy!r} Ha; "
+        f"energy_shift: {record.energy_shift!r} Ha.",
         '"""',
         "from qiskit import QuantumCircuit",
         "from qiskit.circuit.library import PauliEvolutionGate",
