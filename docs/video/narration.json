@@ -1,0 +1,12 @@
+[
+ ["01_title", "Quantinuum, NVIDIA and Pfizer showed that a model trained on ADAPT-VQE circuits can write a molecule's entire quantum circuit in one shot. We're The Quantubians. GenQAI rebuilds that pipeline in Qiskit, runs it on Qollab and IonQ, and tests it honestly."],
+ ["02_qollab_ham", "On Qollab, you type any bond length. PySCF builds the molecular Hamiltonian live in your browser, and our trained model proposes every operator and every angle in about twenty milliseconds, with zero quantum evaluations to propose the circuit."],
+ ["03_qollab_score", "The circuit is scored against exact diagonalization, side by side with kernel ridge regression, nearest neighbour reuse, and a live ADAPT-VQE run, so you can see exactly what ADAPT's operator search costs."],
+ ["04_qollab_ionq", "Then it runs on IonQ's Forte 1 noise model. Qollab accepts one single-circuit job per run, so we pack every measurement basis onto separate qubits of one circuit, and the console reports the measured energy with its error bar."],
+ ["05_workbench_mol", "Locally, GenQAI is a full molecular workbench. Enter any small molecule, like water from a SMILES string. It builds the active-space Hamiltonian, and tells you honestly that no trained model covers water, so it falls back to ADAPT-VQE."],
+ ["06_workbench_grade", "Every circuit is graded in two stages: physical validity and accuracy first, then quantum resources. A shallow but inaccurate circuit can never win."],
+ ["07_results", "What did we learn? On untouched test geometries, one-shot proposals land within a fraction of a millihartree for trained molecules. But the key ingredient was fixing PySCF's orbital sign gauge. With it, plain kernel ridge regression matched or beat our transformer, so that's our default."],
+ ["08_rl_opt", "Reinforcement learning did not improve held-out accuracy. Pruning and re-optimizing circuits cut entangling gates by up to about forty-five percent, but it costs many energy evaluations."],
+ ["09_noise", "On IonQ's noise model, gate count dominates. Hydrogen's four-CNOT circuit lands within tens of millihartree, while lithium hydride's one-hundred-seventy-two-CNOT circuit is hundreds of millihartree off."],
+ ["10_close", "GenQAI is open source under the MIT licence, with every result reproducible. Run it on Qollab, read the numbers, and try to break it. Thanks for watching."]
+]
