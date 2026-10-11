@@ -24,16 +24,18 @@ ROOT = Path(__file__).resolve().parents[1]
 SITE = ROOT / "site"
 SYSTEM = "lih4"
 
-BG = "#0D1321"
-INK = "#F2F4F8"
-MUTED = "#A3ADC2"
-WIRE = "#5B6782"
-CURVE = "#7AB8FF"
-POINT = "#FFB347"
-GATE = "#2A3A5C"
-GATE_EDGE = "#7AB8FF"
-XGATE = "#FFB347"
+# the site's plate palette: five values, never a sixth hue (site/styles.css)
+PAPER, INK, COBALT, SIGNAL = "#efedea", "#0a0a0a", "#1e2edc", "#e0492a"
+BG = PAPER
+MUTED = "#0a0a0a99"  # ink at 60%, as the site's meta text
+WIRE = "#0a0a0a59"  # ink at 35%
+CURVE = COBALT
+POINT = SIGNAL
+GATE = PAPER
+GATE_EDGE = INK
+XGATE = SIGNAL
 
+SERIF = ["Georgia", "Times New Roman", "DejaVu Serif"]  # stands in for Instrument Serif (not installed for matplotlib)
 plt.rcParams["font.family"] = ["Helvetica Neue", "Helvetica", "DejaVu Sans"]
 
 
@@ -71,13 +73,13 @@ def draw_circuit(ax, record: dict, circ: dict, *, wire=WIRE, label=MUTED, text=I
         if b == "1":
             ax.add_patch(FancyBboxPatch((-0.02 - 0.2, q - 0.24), 0.44, 0.48, boxstyle="round,pad=0,rounding_size=0.06",
                                         fc=XGATE, ec="none", zorder=3))
-            ax.text(0, q, "X", color=BG, ha="center", va="center", fontsize=fs + 1, weight="bold", zorder=4)
+            ax.text(0, q, "X", color=PAPER, ha="center", va="center", fontsize=fs + 1, weight="bold", zorder=4)
     for col, (k, theta) in enumerate(zip(ops, angles), start=1):
         support = sorted({q for p in pool.generators[k].paulis for q in range(n) if str(p)[n - 1 - q] != "I"})
         lo, hi = min(support), max(support)
         ax.add_patch(FancyBboxPatch((col - 0.36, lo - 0.3), 0.72, hi - lo + 0.6,
                                     boxstyle="round,pad=0,rounding_size=0.08",
-                                    fc=GATE, ec=GATE_EDGE, lw=1.6, zorder=3))
+                                    fc=GATE, ec=GATE_EDGE, lw=1.3, zorder=3))
         ax.text(col, (lo + hi) / 2, f"G{k}", color=text, ha="center", va="center", fontsize=fs, weight="bold", zorder=4)
         ax.text(col, -0.62, f"{theta:+.3f}", color=label, ha="center", va="center", fontsize=fs - 3,
                 family="monospace", zorder=4)
@@ -102,8 +104,8 @@ def draw_pes(ax, curve, points, *, fs=13):
 
 
 def title_block(fig, x, y, *, big, small, gap, tagline="A trained model writes the whole circuit in one forward pass: zero quantum evaluations to propose."):
-    fig.text(x, y, "GenQAI", color=INK, fontsize=big, weight="bold", ha="left", va="top")
-    fig.text(x, y - gap, "One-shot quantum chemistry circuits", color=INK, fontsize=small, ha="left", va="top")
+    fig.text(x, y, "GenQAI", color=INK, fontsize=big, family=SERIF, ha="left", va="top")
+    fig.text(x, y - gap, "One-shot quantum chemistry circuits", color=INK, fontsize=small, family=SERIF, ha="left", va="top")
     fig.text(x, y - gap * 1.55, tagline,
              color=MUTED, fontsize=small * 0.62, ha="left", va="top")
 
@@ -136,12 +138,12 @@ def cover_square(curve, points, eq, circ):
 
 
 def circuit_svg(eq, circ):
-    """Hero illustration: same circuit on a transparent background, mid-tone ink for both themes."""
+    """Paper figure: the same circuit on a transparent background, in the plate palette."""
     fig = plt.figure(figsize=(9, 4.2))
     fig.patch.set_alpha(0)
     ax = fig.add_axes([0.0, 0.0, 1.0, 1.0])
     ax.patch.set_alpha(0)
-    draw_circuit(ax, eq, circ, wire="#7C879C", label="#7C879C", text=INK, fs=14)
+    draw_circuit(ax, eq, circ, fs=14)
     fig.savefig(SITE / "circuit.svg", transparent=True)
     plt.close(fig)
 
