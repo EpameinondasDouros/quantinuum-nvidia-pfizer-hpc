@@ -1,0 +1,11 @@
+# GenQAI plate system: the same five values as the website (paper, ink, cobalt, sky, signal).
+[theme]
+base = "light"
+primaryColor = "#1e2edc"
+backgroundColor = "#efedea"
+secondaryBackgroundColor = "#e5e5e5"
+textColor = "#0a0a0a"
+font = "sans serif"
+
+[browser]
+gatherUsageStats = false

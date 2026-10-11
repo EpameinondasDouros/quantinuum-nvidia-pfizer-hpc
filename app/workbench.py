@@ -49,7 +49,7 @@ def get_runner() -> JobRunner:
 
 get_runner()
 
-from app import services  # noqa: E402
+from app import services, theme  # noqa: E402
 from genqai import export  # noqa: E402
 from genqai.export import sha256_of, to_jsonable  # noqa: E402
 from genqai.store import ExperimentStore  # noqa: E402
@@ -801,10 +801,11 @@ def history_tab() -> None:
 
 def main() -> None:
     st.set_page_config(page_title="GenQAI workbench", layout="wide")
+    theme.apply()
     ss()
     collect_jobs()
     st.title("GenQAI molecular circuit workbench")
-    st.caption("Molecule -> Hamiltonian -> routing -> one-shot circuit generation -> grading -> execution -> export.")
+    st.caption("Molecule → Hamiltonian → routing → one-shot circuit generation → grading → execution → export")
     sidebar()
     show_errors()
     job_monitor()
