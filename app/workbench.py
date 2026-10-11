@@ -54,7 +54,6 @@ from genqai import export  # noqa: E402
 from genqai.export import sha256_of, to_jsonable  # noqa: E402
 from genqai.store import ExperimentStore  # noqa: E402
 
-MAX_XYZ_BYTES = 64 * 1024
 LIVE = "Source: live computation in this session."
 COMMITTED = "Source: committed results files in this repository (not recomputed here)."
 
@@ -241,7 +240,10 @@ def molecule_inputs(molmod):
             smiles = c1.text_input("SMILES", "[H][H]", key="smiles")
             seed = c2.number_input("Conformer seed", 0, 2**31 - 1, 20261010, key="smiles_seed")
             opt = c3.selectbox("Force-field optimizer", ["none", "MMFF", "UFF"], key="smiles_opt")
-            n_conf = c4.number_input("Conformers", 1, 10, 1, key="smiles_nconf")
+            n_conf = c4.number_input("Conformers", 1, molmod.LIMITS["max_conformers"], 1, key="smiles_nconf")
+            if st.checkbox("Charge and multiplicity from the SMILES (formal charges, radicals)", True,
+                           key="smiles_auto_charge"):
+                charge, mult = None, None
             req = (smiles, seed, opt, n_conf, charge, mult, basis)
             s = ss()
             if st.button("Embed conformers", key="smiles_go") or (s.conformers and s.conformers[0] != req):
@@ -259,13 +261,11 @@ def molecule_inputs(molmod):
             up = st.file_uploader("XYZ file", type=["xyz", "txt"], key="xyz_file")
             text = st.text_area("...or paste XYZ", "", height=120, key="xyz_text")
             if up is not None:
-                if up.size > MAX_XYZ_BYTES:
-                    return None, None, None, f"XYZ file too large ({up.size} bytes > {MAX_XYZ_BYTES})"
+                if up.size > molmod.LIMITS["max_xyz_bytes"]:
+                    return None, None, None, f"XYZ file too large ({up.size} bytes > {molmod.LIMITS['max_xyz_bytes']})"
                 text = up.getvalue().decode("utf-8", errors="replace")
             if not text.strip():
                 return None, None, None, None
-            if len(text.encode()) > MAX_XYZ_BYTES:
-                return None, None, None, "XYZ text too large"
             mol = molmod.from_xyz(text, charge=charge, multiplicity=mult, basis=basis)
         else:
             df = st.data_editor(pd.DataFrame({"symbol": ["H", "H"], "x": [0.0, 0.0], "y": [0.0, 0.0],
@@ -295,7 +295,8 @@ def problem_config(molmod, mol):
                                     mapping=mapping, frozen_core=frozen)
 
 
-def capability_states(molmod, mol, preset, err) -> None:
+def capability_states(molmod, mol, preset, err, current: bool) -> None:
+    """current: the session's Hamiltonian was built from exactly this input."""
     s = ss()
     lanes = services.lane_status()
     rows = []
@@ -303,11 +304,11 @@ def capability_states(molmod, mol, preset, err) -> None:
     rows.append(("Input accepted", "yes" if accepted else "no",
                  err or ("validated by genqai.molecule" if molmod else "preset (legacy path, no Lane A)")
                  if accepted or err else "no molecule entered yet"))
-    rec = s.record
+    rec = s.record if current else None
     rows.append(("Hamiltonian built", "yes" if rec else "no",
                  f"{rec.num_qubits} qubits, {len(rec.pauli_terms)} Pauli terms; {s.get('record_how', '')}" if rec
                  else "press 'Build Hamiltonian'"))
-    d = s.decision
+    d = s.decision if current else None
     if not lanes["registry"][0]:
         legacy = services.legacy_methods(rec.system) if rec else []
         rows.append(("Trained-model inference", "legacy" if legacy else "unknown",
@@ -368,7 +369,9 @@ def molecule_tab() -> None:
             for w in warnings:
                 st.warning(w)
             config = problem_config(molmod, mol)
-            report = molmod.assess(config)
+            rec = ss().record
+            built = rec if rec is not None and getattr(rec, "problem_key", "") == config.key else None
+            report = molmod.assess(config, built)  # with the built record: IonQ packed width too
         except ValueError as exc:
             err = str(exc)
     if err:
@@ -411,11 +414,18 @@ def molecule_tab() -> None:
             submit("build", payload, build_job, molmod is not None, config, preset, report,
                    meta={"config": to_jsonable(config) if config is not None else {"preset": preset}})
     s = ss()
-    if s.record is not None:
-        r = s.record
+    r = s.record
+    current = r is not None and (
+        getattr(r, "problem_key", "") == config.key if config is not None else
+        preset is not None and r.system == preset[0] and
+        tuple(r.geometry_params.values()) == tuple(float(p) for p in preset[1]))
+    if r is not None:
         st.success(f"Current Hamiltonian: {r.system} {r.geometry_params or ''} | {r.num_qubits} qubits | "
                    f"FCI {r.fci_energy:.6f} Ha | HF {r.hf_energy:.6f} Ha | {s.get('record_how', '')}")
-    capability_states(molmod, mol, preset, err)
+        if not current:
+            st.info("The current Hamiltonian (used by Generate, Grade and Execute) was built from a different "
+                    "input. Press 'Build Hamiltonian' to switch to this one.")
+    capability_states(molmod, mol, preset, err, current)
 
 
 # ------------------------------------------------------------------ Generate
