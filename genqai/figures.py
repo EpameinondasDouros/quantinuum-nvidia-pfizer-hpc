@@ -753,6 +753,7 @@ def fig_hw_optimization(results_dir, out_dir):
                     x, y = np.array(pts).T
                     ax.plot(x, y, color=color, marker=marker, ls=ls, lw=1.5, ms=5, mec=SURFACE, mew=1.0, alpha=0.8,
                             label=label)
+            evals = []
             for start, (color, label) in HW_START_STYLE.items():
                 sel = {m: [r for r in rows if r["start"] == start and r["mode"] == m and pred(r["split"])]
                        for m in ("oracle", "blind")}
@@ -770,10 +771,10 @@ def fig_hw_optimization(results_dir, out_dir):
                                                                         alpha=0.6, shrinkA=4, shrinkB=5))
                     ax.scatter(x1, y1, s=80, marker="P", facecolor=face, edgecolors=color, linewidths=1.6, zorder=5,
                                label=f"{label} + prune/refine ({'exact reference' if m == 'oracle' else 'reference-free'})")
-                    if m == "oracle":
-                        ev = np.mean([r["evals_used"] for r in v])
-                        ax.annotate(f"+{ev:.0f} evals", (x1, y1), xytext=(6, -12), textcoords="offset points",
-                                    fontsize=7, color=INK2)
+                evals.append(f"{label}: +{np.mean([r['evals_used'] for r in sel['oracle']]):.0f}")
+            ax.text(0.98, 0.04, "mean prune/refine energy evals (exact ref.)\n" + "\n".join(evals),
+                    transform=ax.transAxes, ha="right", va="bottom", fontsize=7, color=INK2,
+                    bbox=dict(facecolor=SURFACE, edgecolor="none", alpha=0.9, pad=2), zorder=6)
             n = len({r["geometry_id"] for r in rows if pred(r["split"])})
             ax.set_title(f"{SYSTEM_LABEL[s]} — {gname}, {n} geometries", loc="left")
             ax.set_ylim(-3, 105)
@@ -787,7 +788,8 @@ def fig_hw_optimization(results_dir, out_dir):
                      title="Small dot = start circuit as generated; arrow = greedy prune + BFGS refine to stay within "
                            "1.6 mHa (filled: exact FCI reference; hollow: reference-free, tolerance chosen on VAL).\n"
                            "Lines are zero-evaluation KRR prefixes and truncated ADAPT (fig7). Prune/refine spends "
-                           "energy evaluations (annotated): a different cost class from one-shot.", title_fontsize=7.5)
+                           "energy evaluations (panel text): a different cost class from one-shot. SFT and KRR starts share the "
+                           "canonical sequence, so after refinement their points coincide.", title_fontsize=7.5)
     leg.get_title().set_color(INK2)
     fig.suptitle("Hardware-aware optimisation: does prune + refine move the accuracy-vs-CX frontier?", x=0.01,
                  ha="left", fontsize=11, color=INK)
