@@ -23,9 +23,9 @@ import torch
 
 from genqai.data import FRESH_SPLIT, load_hamiltonians, load_teacher, results_dir
 from genqai.evaluate import score_circuit, summarize
+from genqai.generate import sample_policy
 from genqai.model import GQEPolicy
 from genqai.schema import GeneratedCircuit, dump_jsonl
-from genqai.sim import Evaluator
 
 ROOT = Path(__file__).resolve().parent.parent
 SPLITS = ["train", "val", "test_interp", "test_interval", "test_extrap", "test"]
@@ -35,19 +35,14 @@ FRESH_SPLITS = [FRESH_SPLIT]
 def generate(policy: GQEPolicy, record, mode: str, k: int = 16, temperature: float = 1.0, family: str = "sft",
              cnot_budget: int | None = None):
     """-> (GeneratedCircuit, EvalRecord) for one Hamiltonian."""
-    t0 = time.perf_counter()
-    cond = policy.condition([record], cnot_budget=cnot_budget)
-    ops, angles, logp, valid = policy.sample(cond, greedy=True)[0]
-    cost = {"model_forward_passes": 1}
-    if mode == "bestofk":
-        ev = Evaluator(record)
-        cands = [(ops, angles, logp, valid)] + policy.sample(cond, n=k - 1, temperature=temperature)
-        energies = [ev.energy(o, a) if v else np.inf for o, a, _, v in cands]
-        ops, angles, logp, valid = cands[int(np.argmin(energies))]
-        cost = {"model_forward_passes": k, "energy_evals": k}
-    elif mode not in ("oneshot", "refine"):
+    if mode not in ("oneshot", "refine", "bestofk"):
         raise ValueError(mode)
-    cost["runtime_s"] = time.perf_counter() - t0
+    t0 = time.perf_counter()
+    ops, angles, logp, valid, c = sample_policy(policy, record, "bestofk" if mode == "bestofk" else "oneshot", k,
+                                                temperature, cnot_budget)
+    cost = {"model_forward_passes": c["forward_passes"], "runtime_s": time.perf_counter() - t0}
+    if mode == "bestofk":
+        cost["energy_evals"] = c["ranking_energy_evals"]
     method = f"{family}_{mode}"
     extra = {"logprob": logp, **({"k": k, "temperature": temperature} if mode == "bestofk" else {}),
              **({"cnot_budget": cnot_budget} if cnot_budget is not None else {})}
