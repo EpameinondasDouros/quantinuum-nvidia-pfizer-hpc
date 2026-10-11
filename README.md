@@ -212,5 +212,9 @@ optimisation invariants, export reproducibility, and the Streamlit app (headless
 
 ## Credits
 
+This effort is supported by Qollab & IonQ. Developed during the hackathon window with AI coding assistants
+(Claude Code).
+
+
 Reused components and licences are listed in `ATTRIBUTION.md`. The team tracker is section 0 of
 `docs/genqai-implementation-plan.md`.

@@ -4,6 +4,18 @@
 Code, data and the full local workbench: https://github.com/udsy19/genqai
 **Demo video (2:23):** https://drive.google.com/file/d/1oOhMOhFqhNBd3pZ_hhlYvR5wS0-tAtYF/view · **Website:** https://udsy19.github.io/genqai/
 
+*This effort is supported by Qollab & IonQ.*
+
+## The problem
+
+To find a molecule's ground-state energy on a quantum computer, ADAPT-VQE builds a compact circuit one
+operator at a time: every step measures energy gradients for a whole pool of candidate operators and
+re-optimises all angles. That costs hundreds of quantum evaluations per molecular geometry, repeated from
+scratch for every new geometry, which is exactly what a drug-discovery workflow scanning many conformers
+can't afford. We ask whether a model trained on ADAPT-VQE's own circuits can propose the whole circuit
+for a new geometry in one shot, how accurate that is against strong classical and quantum baselines, and
+what it costs on IonQ hardware models.
+
 ## What it does
 
 Quantinuum, NVIDIA and Pfizer's ADAPT-GQE trains a model on ADAPT-VQE circuits, so that for a new
@@ -78,7 +90,8 @@ There are 222 automated tests.
 
 ## Attribution
 
-All code was written during the hackathon window, with no starter code. Inspired by the Quantinuum /
+This effort is supported by Qollab & IonQ. All code was written during the hackathon window, with no starter
+code; we developed it with AI coding assistants (Claude Code). Inspired by the Quantinuum /
 NVIDIA / Pfizer ADAPT-GQE work and ADAPT-VQE (Grimsley et al., 2019). Built on Qiskit, Qiskit Nature,
 PySCF, qiskit-ionq and NumPy/SciPy. Design ideas (no code) came from Conditional_GQE, gqe-for-qsci, the
 PennyLane GQE demo and nanoGPT; licences are in ATTRIBUTION.md in the repo.

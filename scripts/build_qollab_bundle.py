@@ -93,6 +93,7 @@ def build() -> list[Path]:
         'ships data files whose path appears as a literal string in Python source."""\n\n'
         f"DATA_FILES = (\n{lines},\n)\n")
     (OUT / "requirements.txt").write_text(REQUIREMENTS)
+    shutil.copyfile(ROOT / "LICENSE", OUT / "LICENSE")  # MIT, required on Qollab
     return written
 
 
@@ -102,7 +103,7 @@ def check() -> None:
     if big or len(files) >= MAX_FILES:
         raise SystemExit(f"Qollab limits violated: {len(files)} files, over 2 MB: {big}")
     src = "\n".join(p.read_text() for p in files if p.suffix == ".py")
-    missing = [p for p in files if p.suffix not in (".py", ".md", ".txt", ".png")
+    missing = [p for p in files if p.suffix not in (".py", ".md", ".txt", ".png") and p.name != "LICENSE"
                and f'"{p.relative_to(OUT).as_posix()}"' not in src]
     if missing:
         raise SystemExit(f"data files without a literal path in Python source: {missing}")

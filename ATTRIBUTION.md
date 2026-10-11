@@ -1,5 +1,9 @@
 # Attribution
 
+This effort is supported by Qollab & IonQ.
+
+The code was developed during the hackathon window with AI coding assistants (Claude Code).
+
 GenQAI is released under the MIT licence (see `LICENSE`). All code in this repository was written
 during the Qollab × IonQ hackathon (Oct 10–11, 2026). No starter code was used, and no source code
 was copied from the projects listed under "Reference only".
