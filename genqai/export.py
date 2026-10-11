@@ -28,8 +28,11 @@ from genqai.schema import GeneratedCircuit, HamiltonianRecord, software_versions
 
 
 def to_jsonable(obj):
-    """Dataclasses, tuples, numpy scalars/arrays and Paths -> plain JSON types (recursively)."""
+    """Dataclasses, tuples, numpy scalars/arrays and Paths -> plain JSON types (recursively).
+    A dataclass with its own to_dict() (e.g. ExecutionRecord, which drops its transpiled circuits) uses it."""
     if dataclasses.is_dataclass(obj) and not isinstance(obj, type):
+        if callable(getattr(obj, "to_dict", None)):
+            return to_jsonable(obj.to_dict())
         return {f.name: to_jsonable(getattr(obj, f.name)) for f in dataclasses.fields(obj)}
     if isinstance(obj, dict):
         return {str(k): to_jsonable(v) for k, v in obj.items()}
@@ -220,7 +223,7 @@ def measurements_csv(execution) -> str:
     ex = to_jsonable(execution)
     summary = {k: _scalar(ex.get(k)) for k in EXECUTION_FIELDS if k in ex}
     groups = ex.get("group_details") or []
-    rows = [{**summary, "group": i, **_flatten(g, "group.")} for i, g in enumerate(groups)] or [summary]
+    rows = [{**summary, **_flatten(g, "group.")} for g in groups] or [summary]
     return _csv(rows, EXECUTION_FIELDS)
 
 

@@ -94,6 +94,20 @@ def test_measurements_csv_rows():
     assert len(single) == 1
 
 
+def test_measurements_csv_from_real_execution_record():
+    if importlib.util.find_spec("genqai.execution") is None:
+        pytest.skip("genqai.execution (Lane D) not in this build")
+    from genqai.execution import execute
+
+    rec = load_hamiltonians("h2", "test")[0]
+    ex = execute(rec, load_teacher("h2")[rec.geometry_id], "local_shots", shots=200, seed=3)
+    rows = list(csv.DictReader(io.StringIO(measurements_csv(ex))))
+    assert len(rows) == ex.num_groups and rows[0]["execution_id"] == ex.execution_id
+    assert float(rows[0]["energy"]) == ex.energy and "group.basis" in rows[0]
+    meta = json.loads(metadata_json({"execution": ex}))  # transpiled circuits are dropped via to_dict()
+    assert "circuits" not in meta["execution"]
+
+
 def test_benchmark_csv_flattens():
     grades = {"sft": {"status": "valid_meets_target", "energy": {"error_mha": 0.1, "thresholds": {"1.6": True}},
                       "resources": {"cx_qiskit": 4}, "cost": {"quantum_evals_to_propose": 0}, "weighted_score": None},

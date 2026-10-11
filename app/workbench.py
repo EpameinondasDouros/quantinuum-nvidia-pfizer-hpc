@@ -126,8 +126,10 @@ def apply_result(meta: dict, result) -> None:
     elif kind == "generate":
         circ, log = result
         s.counter += 1
-        name = f"{meta['method']} #{s.counter}"
-        s.circuits[name] = {"circuit": circ, "log": log, "method": meta["method"], "geometry_id": circ.geometry_id}
+        method = log.get("method") or meta["method"]  # "auto" resolves to the recommended method
+        name = f"{method} #{s.counter}"
+        s.circuits[name] = {"circuit": circ, "log": log, "method": method, "geometry_id": circ.geometry_id}
+        s.gen_view = name
     elif kind == "grade":
         s.grades[meta["name"]] = result
     elif kind == "optimize":
@@ -454,7 +456,8 @@ def generate_tab() -> None:
     gen = services.lane("generate")
     d = s.decision
     if gen is not None and d is not None:
-        methods = list(dict.fromkeys(["auto"] + list(get(d, "available_methods", []))))
+        avail = list(get(d, "available_methods", []))
+        methods = list(dict.fromkeys(["auto"] + [m.split("+")[0] for m in avail]))
         st.markdown(f"**Registry recommendation:** `{get(d, 'recommended')}` (path {get(d, 'path')})")
         for reason in get(d, "reasons", []):
             st.caption(f"why: {reason}")
@@ -473,9 +476,12 @@ def generate_tab() -> None:
     c1, c2, c3 = st.columns([2, 1, 1])
     base = c1.selectbox("Method", methods, key="gen_method",
                         format_func=lambda m: services.METHOD_LABELS.get(m, m))
-    legacy = base.startswith("legacy:")
-    refine = c2.checkbox("+ refine angles", False, disabled=legacy, key="gen_refine")
-    bestofk = c3.checkbox("best-of-K", False, disabled=legacy, key="gen_bok")
+    allowed = set(avail) if gen is not None and d is not None else set()
+    refine = c2.checkbox("+ refine angles", False, disabled=f"{base}+refine" not in allowed, key="gen_refine",
+                         help="BFGS re-optimisation of the angles; its energy evaluations are counted separately")
+    bestofk = c3.checkbox("best-of-K", False, disabled=f"{base}+bestofk" not in allowed, key="gen_bok",
+                          help="sample K candidates and keep the lowest-energy one (K energy evaluations)")
+    refine, bestofk = refine and f"{base}+refine" in allowed, bestofk and f"{base}+bestofk" in allowed
     opts = {}
     if bestofk:
         opts["k"] = st.slider("K (candidates)", 2, 64, 16, key="gen_k")
@@ -629,7 +635,11 @@ def execute_tab() -> None:
         unavailable("execution" if ex is None else "backends", "Execution on simulators and IonQ")
         return
     infos = be.list_backends()
-    st.dataframe(pd.DataFrame([to_jsonable(b) for b in infos]), hide_index=True, width="stretch")
+    st.dataframe(pd.DataFrame([{k: get(b, k) for k in ("name", "available", "reason", "max_qubits", "noise_model",
+                                                       "needs_key", "paid", "description")} for b in infos]),
+                 hide_index=True, width="stretch")
+    st.caption("Unavailable and paid backends cannot be selected; IonQ backends need an API key and are free "
+               "cloud simulators. The width check runs before any submission.")
     if rec is None or not circs:
         st.info("Generate a circuit first.")
         return
@@ -637,25 +647,35 @@ def execute_tab() -> None:
     if not usable:
         st.warning("No backend is available in this environment.")
         return
-    c1, c2, c3, c4 = st.columns([2, 2, 1, 1])
+    c1, c2, c3, c4, c5 = st.columns([2, 2, 1, 1, 1])
     name = c1.selectbox("Circuit", list(circs)[::-1], key="exec_circ")
     backend = c2.selectbox("Backend (available, free only)", usable, key="exec_backend")
-    shots = c3.number_input("Shots per group", 100, 100_000, 2000, step=100, key="exec_shots")
+    shots = c3.number_input("Shots", 100, 100_000, 2000, step=100, key="exec_shots")
     seed = c4.number_input("Seed", 0, 2**31 - 1, 0, key="exec_seed")
+    packed = {"backend default": None, "packed": True, "unpacked": False}[
+        c5.selectbox("Packing", ["backend default", "packed", "unpacked"], key="exec_packed")]
     circ = circs[name]["circuit"]
-    base = {"g": rec.geometry_id, "c": to_jsonable(circ), "b": backend, "s": shots, "seed": seed}
+    base = {"g": rec.geometry_id, "c": to_jsonable(circ), "b": backend, "s": shots, "seed": seed, "p": packed}
     b1, b2 = st.columns(2)
     if b1.button("Dry run (width check, no submission)", disabled=busy("execute"), key="exec_dry"):
-        submit("execute", {**base, "dry": True}, services.execute_job, rec, circ, backend, int(shots), int(seed), True,
-               meta={"name": name})
+        submit("execute", {**base, "dry": True}, services.execute_job, rec, circ, backend, int(shots), int(seed),
+               packed, True, meta={"name": name})
     if b2.button("Execute", type="primary", disabled=busy("execute"), key="exec_go"):
         submit("execute", {**base, "dry": False}, services.execute_job, rec, circ, backend, int(shots), int(seed),
-               False, meta={"name": name}, inline_s=5)
+               packed, False, meta={"name": name}, inline_s=5)
     runs = s.executions.get(name, [])
     if runs:
         st.caption(LIVE)
+        last = to_jsonable(runs[-1])
+        if last.get("status") not in ("ok", "dry_run"):
+            st.error(f"last execution: {last.get('status')}: {last.get('error') or ''}")
+        for note in last.get("notes") or []:
+            st.caption(note)
+        if last.get("planned"):
+            with st.expander("Plan of the last execution (circuits, widths, shots)"):
+                st.json(last["planned"])
         cols = ["execution_id", "backend", "noise_model", "shots", "packed", "num_groups", "width", "energy", "stderr",
-                "error_mha", "job_id", "status", "error", "runtime_s"]
+                "error_mha", "job_id", "status", "runtime_s"]
         rows = [{k: to_jsonable(r).get(k) for k in cols} for r in runs]
         g = s.grades.get(name)
         if g is not None:

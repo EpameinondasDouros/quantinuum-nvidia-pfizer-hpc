@@ -40,6 +40,7 @@ METHOD_LABELS = {
     "transformer_budget": "transformer (CX budget)",
     "krr": "kernel ridge angle regression",
     "nn_reuse_gauge": "nearest-neighbour reuse (gauge-fixed)",
+    "angle_interp": "angle interpolation",
     "adapt": "ADAPT-VQE (conventional)",
     "uccsd_vqe": "UCCSD-VQE (conventional)",
 }
@@ -203,9 +204,9 @@ def optimize_job(ctx, record, circuit, objective: str, target_mha: float, max_ev
 
 # ---------------------------------------------------------------- execution
 
-def execute_job(ctx, record, circuit, backend: str, shots: int, seed, dry_run: bool):
+def execute_job(ctx, record, circuit, backend: str, shots: int, seed, packed, dry_run: bool):
     ctx.progress(("dry run (width check) on " if dry_run else "executing on ") + backend)
-    return lane("execution").execute(record, circuit, backend, shots=shots, seed=seed, dry_run=dry_run)
+    return lane("execution").execute(record, circuit, backend, shots=shots, seed=seed, packed=packed, dry_run=dry_run)
 
 
 # ---------------------------------------------------------------- committed results
