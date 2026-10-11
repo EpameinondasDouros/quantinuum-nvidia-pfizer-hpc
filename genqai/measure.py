@@ -16,6 +16,20 @@ Groups use independent shots, so Var(E) = sum_g Var(E_g) and
 With exact probabilities (no sampling) E_g = sum_b p(b) f_g(b) and stderr = 0; the same
 probabilities give the *predicted* stderr for a shot allocation via Var_p(f_g) / N_g.
 
+Packed single-circuit scheme (MeasurementPlan.packed_circuit): copy g of the state sits on qubits
+[g*n, (g+1)*n) in group g's basis. The copies form a product state, so in every shot the G
+sub-bitstrings are independent samples, one per group. One run of S shots therefore gives EACH group
+S samples (circuit executions = S, group samples = G*S), and Var(E) = sum_g Var(E_g) holds exactly as
+for separate circuits (ideal case; device crosstalk between copies would add correlations we ignore).
+Its width is packed_width(plan) = G*n qubits.
+
+Outcome keys
+------------
+Distributions may be keyed by int (bit q = qubit q), binary strings (qubit 0 rightmost, "0b" prefix
+allowed), hex strings ("0x..") or space-separated classical registers ("c1 c0", Qiskit's format:
+the last register is leftmost, so removing the spaces gives the right integer). A key wider than the
+measured register raises (a register-order bug, not data).
+
 Backends
 --------
 exact        Evaluator (sparse statevector) expectation. No circuits, no shots.
@@ -82,6 +96,18 @@ class MeasurementPlan:
     def num_groups(self) -> int:
         return len(self.groups)
 
+    def measurement_circuits(self, state: QuantumCircuit, packed: bool) -> list[QuantumCircuit]:
+        """What one job submits: [packed_circuit] or one circuit per group."""
+        return [self.packed_circuit(state)] if packed else self.circuits(state)
+
+    def distributions(self, counts: list[dict], packed: bool) -> list[dict]:
+        """Per-group distributions from a job's per-circuit counts (see measurement_circuits)."""
+        if packed:
+            if len(counts) != 1:
+                raise ValueError(f"packed job must return 1 count dict, got {len(counts)}")
+            return self.unpack_counts(counts[0])
+        return counts
+
     def circuits(self, state: QuantumCircuit) -> list[QuantumCircuit]:
         """One measurement circuit per group: state + basis rotation + measure_all."""
         out = []
@@ -114,7 +140,7 @@ class MeasurementPlan:
         n, mask = self.num_qubits, (1 << self.num_qubits) - 1
         out = [dict() for _ in range(self.num_groups)]
         for key, c in counts.items():
-            b = _outcome_int(key)
+            b = _outcome_int(key, packed_width(self))
             for g in range(self.num_groups):
                 sub = (b >> (g * n)) & mask
                 out[g][sub] = out[g].get(sub, 0) + c
@@ -137,7 +163,7 @@ class MeasurementPlan:
             raise ValueError(f"expected {self.num_groups} distributions, got {len(dists)}")
         means, variances, shots = [], [], []
         for g, d in enumerate(dists):
-            keys = np.array([_outcome_int(k) for k in d], dtype=np.int64)
+            keys = np.array([_outcome_int(k, self.num_qubits) for k in d], dtype=np.int64)
             w = np.array(list(d.values()), dtype=float)
             f = self._group_values(g, keys)
             n = w.sum()
@@ -207,11 +233,21 @@ class EnergyEstimate:
         return asdict(self)
 
 
-def _outcome_int(key) -> int:
+def packed_width(plan: MeasurementPlan) -> int:
+    """Qubits of plan.packed_circuit: one copy of the n-qubit state per measurement group."""
+    return plan.num_qubits * plan.num_groups
+
+
+def _outcome_int(key, num_bits: int | None = None) -> int:
+    """Outcome key -> int with bit q = qubit q (formats: see module docstring)."""
     if isinstance(key, (int, np.integer)):
-        return int(key)
-    key = str(key).replace(" ", "")
-    return int(key, 16) if key.startswith("0x") else int(key, 2)
+        b = int(key)
+    else:
+        k = str(key).replace(" ", "").replace("_", "").lower()
+        b = int(k, 16) if k.startswith("0x") else int(k[2:] if k.startswith("0b") else k, 2)
+    if b < 0 or (num_bits is not None and b >> num_bits):
+        raise ValueError(f"outcome {key!r} does not fit {num_bits} measured qubits (register order/width mismatch)")
+    return b
 
 
 def compile_state(state: QuantumCircuit, optimization_level: int = 1) -> QuantumCircuit:
@@ -287,10 +323,15 @@ def submit_ionq(circuits: list[QuantumCircuit], shots: int, noise_model: str = "
     For "ideal", `shots` only sizes that client-side re-sampler (the server returns probabilities);
     qiskit-ionq keeps only probability bins that were hit, so it must be large (IONQ_IDEAL_SAMPLER_SHOTS).
     """
-    backend = backend or ionq_backend()
-    backend.set_options(noise_model=noise_model, shots=shots)
+    backend = configure_ionq(backend or ionq_backend(), noise_model, shots)
     tqc = transpile(circuits, backend=backend, optimization_level=1, seed_transpiler=0)
     return backend.run(tqc)
+
+
+def configure_ionq(backend, noise_model: str, shots: int):
+    """Set noise model and shots as BACKEND options (see submit_ionq for why). Returns backend."""
+    backend.set_options(noise_model=noise_model, shots=shots)
+    return backend
 
 
 def collect_ionq(result, num_circuits: int, exact: bool) -> list[dict]:
@@ -322,6 +363,11 @@ def _backend_name(backend) -> str:
     return str(name() if callable(name) else name)  # BackendV1: method, BackendV2: property
 
 
+def is_ionq(backend) -> bool:
+    """True for qiskit-ionq backends (and anything named like one, e.g. Qollab's injected IonQ)."""
+    return "ionq" in (_backend_name(backend) + type(backend).__module__).lower()
+
+
 def _backend_qubits(backend) -> int | None:
     n = getattr(backend, "num_qubits", None)
     if n is None and hasattr(backend, "configuration"):
@@ -336,28 +382,24 @@ def measure_on_backend(record: HamiltonianRecord, ops, angles, backend, shots_pe
     packed=False: one backend.run(list_of_group_circuits). packed=True: one circuit holding a copy of
     the state per group (MeasurementPlan.packed_circuit) -- Qollab's IonQ gateway accepts only one
     single-circuit job per run. Default: packed for IonQ backends. Backend options are left untouched.
+    Every group gets shots_per_group samples either way; meta["executions"] counts circuit executions
+    (shots_per_group packed, num_groups * shots_per_group otherwise).
     """
     plan = plan or MeasurementPlan.from_record(record)
     name = _backend_name(backend)
     if packed is None:
-        packed = "ionq" in (name + type(backend).__module__).lower()
-    state = compile_state(build_circuit(record, ops, angles))
-    if packed:
-        width, cap = plan.num_qubits * plan.num_groups, _backend_qubits(backend)
-        if cap is not None and width > cap:
-            raise ValueError(f"{plan.num_groups} measurement groups x {plan.num_qubits} qubits = {width} qubits in one "
-                             f"circuit, but {name} has {cap}. Use h2 on IonQ, or a local simulator for this system.")
-        tqc = transpile(plan.packed_circuit(state), backend=backend, optimization_level=1, seed_transpiler=0)
-        job = backend.run(tqc, shots=shots_per_group)
-        dists = plan.unpack_counts(result_counts(job.result(), 1)[0])
-    else:
-        circuits = plan.circuits(state)
-        tqc = transpile(circuits, backend=backend, optimization_level=1, seed_transpiler=0)
-        job = backend.run(tqc, shots=shots_per_group)
-        dists = result_counts(job.result(), len(circuits))
-    est = plan.estimate(dists)
+        packed = is_ionq(backend)
+    width, cap = packed_width(plan) if packed else plan.num_qubits, _backend_qubits(backend)
+    if cap is not None and width > cap:
+        raise ValueError(f"{plan.num_groups} measurement groups x {plan.num_qubits} qubits = {width} qubits in one "
+                         f"circuit, but {name} has {cap}. Use h2 on IonQ, or a local simulator for this system."
+                         if packed else f"{width}-qubit circuit, but {name} has {cap} qubits.")
+    circuits = plan.measurement_circuits(compile_state(build_circuit(record, ops, angles)), packed)
+    tqc = transpile(circuits, backend=backend, optimization_level=1, seed_transpiler=0)
+    job = backend.run(tqc[0] if packed else tqc, shots=shots_per_group)
+    est = plan.estimate(plan.distributions(result_counts(job.result(), len(circuits)), packed))
     est.backend = name
-    est.meta["packed"] = packed
+    est.meta.update(packed=packed, width=width, executions=shots_per_group * len(circuits))
     try:
         est.meta["job_id"] = job.job_id()
     except Exception:

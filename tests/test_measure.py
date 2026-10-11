@@ -3,20 +3,24 @@ import json
 import numpy as np
 import pytest
 from qiskit import QuantumCircuit
+from qiskit.quantum_info import SparsePauliOp, Statevector
 
 from genqai.circuits import build_circuit
 from genqai.data import DATA_DIR, load_hamiltonians, load_teacher
+from genqai.execution import execute
 from genqai.measure import (
     MeasurementPlan,
+    _outcome_int,
     collect_ionq,
     compile_state,
     exact_probabilities,
     measure_energy,
     measure_on_backend,
+    packed_width,
     result_counts,
     submit_ionq,
 )
-from genqai.schema import GeneratedCircuit, load_jsonl
+from genqai.schema import GeneratedCircuit, HamiltonianRecord, load_jsonl
 from genqai.sim import Evaluator
 
 
@@ -161,3 +165,180 @@ def test_packed_single_circuit_matches_exact():
     exact = ev.energy(circ.operators, circ.angles)
     est = measure_on_backend(rec, circ.operators, circ.angles, AerSimulator(seed_simulator=1), 200_000, packed=True)
     assert est.meta["packed"] and abs(est.energy - exact) < 4 * est.stderr
+
+
+# ---------------------------------------------------------------- measurement validation (analytic)
+
+TWO_Q = [("ZI", 0.5), ("XX", 0.3), ("YY", -0.2), ("IZ", 0.1)]  # Qiskit order: qubit 0 rightmost
+
+
+def analytic_record(terms, n, fci=float("nan")) -> HamiltonianRecord:
+    nan = float("nan")
+    return HamiltonianRecord(
+        geometry_id="analytic", system="analytic", molecule="", geometry_params={}, coordinates=[], basis="",
+        active_electrons=0, active_orbitals=[], mapping="", num_qubits=n,
+        pauli_terms=[{"pauli": p, "coefficient": c} for p, c in terms], energy_shift=0.0, hf_state="0" * n,
+        hf_energy=nan, ccsd_energy=nan, fci_energy=fci)
+
+
+def _states() -> dict[str, tuple[QuantumCircuit, float | None]]:
+    """name -> (2-qubit state, analytic <H> for TWO_Q or None)."""
+    bell = QuantumCircuit(2)
+    bell.h(0)
+    bell.cx(0, 1)
+    asym = QuantumCircuit(2)
+    asym.x(0)  # |q1 q0> = |01>: <ZI> = +1, <IZ> = -1
+    prod = QuantumCircuit(2)
+    prod.ry(0.3, 0)
+    prod.ry(1.1, 1)
+    prod.rz(0.4, 1)
+    ent = QuantumCircuit(2)
+    ent.ry(0.7, 0)
+    ent.ry(-1.3, 1)
+    ent.cx(0, 1)
+    ent.rz(0.9, 0)
+    ent.ry(0.5, 1)
+    ent.sx(0)
+    return {"bell": (bell, 0.5), "asym": (asym, 0.4), "product": (prod, None), "entangled": (ent, None)}
+
+
+def _direct(terms, state) -> float:
+    return float(np.real(Statevector(state).expectation_value(SparsePauliOp.from_list(terms))))
+
+
+def _grouped_exact(plan, state):
+    probs = exact_probabilities(plan.circuits(state))
+    return plan.estimate([dict(enumerate(p)) for p in probs], exact=True)
+
+
+def _packed_exact(plan, state):
+    (p,) = exact_probabilities([plan.packed_circuit(state)])
+    return plan.estimate(plan.unpack_counts(dict(enumerate(p))), exact=True), p
+
+
+@pytest.mark.parametrize("name", ["bell", "asym", "product", "entangled"])
+def test_analytic_direct_grouped_packed_agree(name):
+    state, known = _states()[name]
+    rec = analytic_record(TWO_Q, 2)
+    plan = MeasurementPlan.from_record(rec)
+    assert plan.num_groups == 3 and packed_width(plan) == 6
+    direct = _direct(TWO_Q, state)
+    if known is not None:
+        assert direct == pytest.approx(known, abs=1e-12)
+    assert abs(_grouped_exact(plan, state).energy - direct) < 1e-12
+    assert abs(_packed_exact(plan, state)[0].energy - direct) < 1e-12
+    for packed in (False, True):  # same through the execution layer
+        ex = execute(rec, state, "statevector", shots=0, packed=packed)
+        assert ex.status == "ok" and abs(ex.energy - direct) < 1e-12 and ex.stderr == 0
+        assert ex.error_mha is None  # no finite reference
+
+
+def test_endianness_asymmetric_state():
+    """X on qubit 0 only: Z on qubit 0 (label 'IZ') reads -1, Z on qubit 1 ('ZI') reads +1."""
+    state = _states()["asym"][0]
+    for label, want in (("IZ", -1.0), ("ZI", 1.0)):
+        plan = MeasurementPlan.from_record(analytic_record([(label, 1.0)], 2))
+        assert _grouped_exact(plan, state).energy == pytest.approx(want, abs=1e-12)
+        assert _packed_exact(plan, state)[0].energy == pytest.approx(want, abs=1e-12)
+    plan = MeasurementPlan.from_record(analytic_record(TWO_Q, 2))
+    groups = plan.unpack_counts(dict(enumerate(_packed_exact(plan, state)[1])))
+    zz = {k: v for k, v in groups[plan.bases.index("ZZ")].items() if v > 1e-12}
+    assert zz == pytest.approx({0b01: 1.0})  # qubit 0 = bit 0 in every copy
+
+
+@pytest.mark.parametrize("sign", [1, -1])
+def test_single_qubit_x_eigenstates(sign):
+    qc = QuantumCircuit(1)
+    if sign < 0:
+        qc.x(0)
+    qc.h(0)  # |+> or |->
+    terms = [("X", 0.7), ("Z", 0.2)]
+    rec = analytic_record(terms, 1)
+    plan = MeasurementPlan.from_record(rec)
+    assert _grouped_exact(plan, qc).energy == pytest.approx(0.7 * sign, abs=1e-12)
+    assert _packed_exact(plan, qc)[0].energy == pytest.approx(0.7 * sign, abs=1e-12)
+    ex = execute(rec, qc, "local_shots", shots=4000, seed=5)
+    xg = ex.group_details[plan.bases.index("X")]
+    assert xg["mean"] == pytest.approx(0.7 * sign) and xg["stderr"] == 0  # eigenstate: no spread
+
+
+def test_outcome_key_formats():
+    """int, binary, 0b, hex and space-separated register keys give the same estimate; too wide raises."""
+    plan = MeasurementPlan.from_record(analytic_record(TWO_Q, 2))
+    probs = exact_probabilities(plan.circuits(_states()["entangled"][0]))
+    counts = [{i: int(round(v * 10_000)) for i, v in enumerate(p) if round(v * 10_000)} for p in probs]
+    ref = plan.estimate(counts)
+    fmts = [lambda i: format(i, "02b"), lambda i: "0b" + format(i, "b"), hex,
+            lambda i: f"{i >> 1} {i & 1}"]  # two 1-bit classical registers: last register leftmost
+    for f in fmts:
+        est = plan.estimate([{f(i): c for i, c in d.items()} for d in counts])
+        assert est.energy == ref.energy and est.stderr == ref.stderr
+    with pytest.raises(ValueError):
+        _outcome_int("101", 2)
+    with pytest.raises(ValueError):
+        plan.estimate([{"0x4": 1}, {"00": 1}, {"00": 1}])
+
+
+def _multinomial(rng, p, shots) -> dict:
+    p = np.clip(p, 0, None)
+    return {i: int(c) for i, c in enumerate(rng.multinomial(shots, p / p.sum())) if c}
+
+
+@pytest.mark.parametrize("packed", [False, True])
+def test_stderr_calibration_coverage(packed):
+    """Over 400 independent finite-shot estimates, |E - exact| < 1 stderr ~68%, < 2 stderr ~95%."""
+    state = _states()["entangled"][0]
+    plan = MeasurementPlan.from_record(analytic_record(TWO_Q, 2))
+    exact = _direct(TWO_Q, state)
+    probs = exact_probabilities(plan.circuits(state))
+    (pp,) = exact_probabilities([plan.packed_circuit(state)])
+    rng = np.random.default_rng(20261010)
+    z = []
+    for _ in range(400):
+        if packed:
+            est = plan.estimate(plan.unpack_counts(_multinomial(rng, pp, 1000)))
+        else:
+            est = plan.estimate([_multinomial(rng, p, 1000) for p in probs])
+        assert est.shots_per_group == [1000] * 3
+        z.append(abs(est.energy - exact) / est.stderr)
+    z = np.array(z)
+    assert 0.61 < (z < 1).mean() < 0.75
+    assert 0.92 < (z < 2).mean() < 0.98
+    assert (z < 4).all()
+    assert est.stderr == pytest.approx(plan.predicted_stderr(probs, [1000] * 3), rel=0.1)
+
+
+@pytest.mark.parametrize("packed", [False, True])
+def test_finite_shots_within_4_stderr_and_shot_accounting(packed):
+    state = _states()["entangled"][0]
+    rec = analytic_record(TWO_Q, 2)
+    ex = execute(rec, state, "local_shots", shots=20_000, seed=11, packed=packed)
+    assert ex.status == "ok" and ex.packed == packed and ex.shots == 20_000
+    assert abs(ex.energy - _direct(TWO_Q, state)) < 4 * ex.stderr
+    assert [g["shots"] for g in ex.group_details] == [20_000] * 3
+    assert ex.executions == (20_000 if packed else 3 * 20_000)
+    assert ex.width == (6 if packed else 2)
+
+
+def test_measure_on_backend_shot_accounting():
+    from qiskit_aer import AerSimulator
+
+    rec = load_hamiltonians("h2", "test")[0]
+    c = load_teacher("h2")[rec.geometry_id]
+    for packed in (False, True):
+        est = measure_on_backend(rec, c.operators, c.angles, AerSimulator(seed_simulator=2), 500, packed=packed)
+        assert est.shots_per_group == [500, 500] and est.total_shots == 1000
+        assert est.meta["executions"] == (500 if packed else 1000)
+        assert est.meta["width"] == (4 if packed else 2)
+
+
+def test_execute_matches_evaluator_on_records(case):
+    rec, c = case
+    exact = Evaluator(rec).energy(c.operators, c.angles)
+    ex = execute(rec, c, "statevector", shots=0)
+    assert ex.status == "ok" and abs(ex.energy - exact) < 1e-9
+    assert ex.error_mha == pytest.approx(1000 * (exact - rec.fci_energy), abs=1e-6)
+    if packed_width(MeasurementPlan.from_record(rec)) <= 24:
+        assert abs(execute(rec, c, "statevector", shots=0, packed=True).energy - exact) < 1e-9
+    shots = execute(rec, c, "local_shots", shots=20_000, seed=4)
+    assert abs(shots.energy - exact) < 4 * shots.stderr
