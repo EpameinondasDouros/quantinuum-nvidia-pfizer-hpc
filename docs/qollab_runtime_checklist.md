@@ -50,3 +50,15 @@ conformers, arbitrary molecules, routing UI, optimisation, exports) are local on
 (`streamlit run app/workbench.py`): Qollab has no RDKit or PyTorch, and its PySCF build lacks
 CASCI/FCI/CC. `genqai/__init__.py` imports torch first only when torch is installed (a macOS OpenMP
 init-order fix), so it's a no-op in Pyodide.
+
+## Re-verification after the phase-2 bundle update (Oct 11, 2026)
+
+Uploaded the 7 changed bundle files (`genqai/{__init__,chemistry,circuits,measure,pool,schema}.py`,
+`main.py`) to the draft with "Keep and add".
+- Built-in simulator: H₂ 1.33 Å, transformer 0.006 mHa; measured −0.04 ± 5.78 mHa.
+- IonQ Forte 1 simulator (fresh page load): measured **+16.75 ± 5.96 mHa**, job
+  `01a1285e-639a-7445-8d01-aa0365bdc241`, packed 2 groups on 4 qubits.
+
+Known Qollab quirk: a second run started right after another one once failed with "genqai/features.py
+was not loaded for this run … OSError: [Errno 29] I/O error", although that file hadn't changed. Reloading
+the page and running again worked. Judges who see it should reload the page.

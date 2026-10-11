@@ -56,9 +56,10 @@ pool gradients per geometry. Chemical accuracy is |E − E_FCI| ≤ 1.6 mHa.
 4. **Nothing one-shot extrapolates.** Beyond the training range (LiH at 4.1–4.4 Å) every one-shot
    method misses, by 6–150 mHa. Refinement and ADAPT don't. That is why LiH shows 71% for all one-shot
    methods: the 10 in-range points are all correct and the 4 extrapolated ones all fail.
-5. **On IonQ, gate count is what matters.** H₂'s 4-CX circuit measured +7.8 ± 5.8 mHa (r = 1.33 Å,
-   through Qollab, job `01a12826-5478-72af-b517-c3e60f663d79`) and +25.0 ± 6.4 mHa (r = 0.8 Å, via the
-   API, job `01a12845-095c-73f9-b107-03d2aa0cef79`) on IonQ's Forte 1 noise model. Treat these as two
+5. **On IonQ, gate count is what matters.** H₂'s 4-CX circuit measured +7.8 ± 5.8 mHa and +16.8 ± 6.0 mHa
+   (r = 1.33 Å, two runs through Qollab, jobs `01a12826-5478-72af-b517-c3e60f663d79` and
+   `01a1285e-639a-7445-8d01-aa0365bdc241`) and +25.0 ± 6.4 mHa (r = 0.8 Å, via the
+   API, job `01a12845-095c-73f9-b107-03d2aa0cef79`) on IonQ's Forte 1 noise model. Treat these as three
    samples, not a calibrated error. A custom molecule ran too: HeH⁺ (ADAPT circuit, 4 groups packed
    on 8 qubits) gave +36.1 ± 11.0 mHa, job `01a12858-0690-7546-94e7-76cddf9f0e3f`. LiH's 172-CX circuit is about 460 mHa off under similar noise
    (`figures/fig6_ionq.png`).

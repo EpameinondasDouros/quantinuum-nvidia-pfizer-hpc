@@ -37,7 +37,7 @@ onto separate qubits of one circuit.
   162 (from 298) at 100% chemical accuracy, at the price of hundreds to thousands of energy evaluations.
 - One-shot methods fail beyond the training range; the workbench labels those cases experimental and
   recommends refinement or ADAPT.
-- On IonQ's Forte 1 noise model: H₂ (4 CX) +7.8 ± 5.8 mHa (via Qollab) and +25.0 ± 6.4 mHa (API).
+- On IonQ's Forte 1 noise model: H₂ (4 CX) +7.8 ± 5.8 and +16.8 ± 6.0 mHa (two Qollab runs at 1.33 Å) and +25.0 ± 6.4 mHa (API, 0.8 Å).
   Custom HeH⁺ gave +36.1 ± 11.0 mHa. LiH's 172-CX circuit is about 460 mHa off under noise. Gate count
   dominates.
 
@@ -58,8 +58,8 @@ quantum-chemistry, vqe, adapt-vqe, generative-ai, ionq, qiskit, benchmarking
 Script and shot list: `docs/video_script.md`. **Not recorded yet.**
 
 ## Before publishing (manual steps for the team)
-1. Re-upload the current `qollab/` bundle to the draft if anything changed since the last upload (see
-   the tracker's F7 row), and press Run once on the built-in simulator and once on IonQ Forte 1.
+1. The draft holds the bundle as of commit `a249f96` (verified Oct 11 on the built-in simulator and IonQ
+   Forte 1). Re-upload only if `qollab/` changes again (`git diff a249f96 -- qollab`).
 2. Paste the page text above into the project card. The draft's write-up currently comes from
    `qollab/README.md`.
 3. Record and upload the video, add the link.
