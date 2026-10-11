@@ -1,0 +1,106 @@
+{
+ "execution_id": "20261010T202339-70ef50a1",
+ "backend": "ionq_simulator_forte-1",
+ "noise_model": "forte-1",
+ "shots": 1000,
+ "packed": true,
+ "num_groups": 4,
+ "width": 8,
+ "energy": -2.8149294378062297,
+ "stderr": 0.011048103837392935,
+ "error_mha": 36.0945921711906,
+ "job_id": "01a12858-0690-7546-94e7-76cddf9f0e3f",
+ "compiled_qasm": "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[29];\ncreg meas[8];\nrx(-pi/2) q[0];\nry(-pi/2) q[1];\nrz(-pi) q[1];\ncx q[1],q[0];\nrz(0.06624411216694612) q[0];\ncx q[1],q[0];\nrz(pi/2) q[0];\nsx q[0];\nrz(-pi/2) q[1];\nry(pi/2) q[1];\ncx q[1],q[0];\nrz(-0.06624411216694612) q[0];\ncx q[1],q[0];\nry(0.023611072519314852) q[0];\np(1.594407401709974) q[1];\nsx q[1];\nrx(-pi/2) q[2];\nry(-pi/2) q[3];\nrz(-pi) q[3];\ncx q[3],q[2];\nrz(0.06624411216694612) q[2];\ncx q[3],q[2];\nrz(pi/2) q[2];\nsx q[2];\nrz(-pi/2) q[3];\nry(pi/2) q[3];\ncx q[3],q[2];\nrz(-0.06624411216694612) q[2];\ncx q[3],q[2];\nry(-1.5471852542755817) q[2];\nrz(-pi) q[2];\np(1.594407401709974) q[3];\nsx q[3];\nrx(-pi/2) q[4];\nry(-pi/2) q[5];\nrz(-pi) q[5];\ncx q[5],q[4];\nrz(0.06624411216694612) q[4];\ncx q[5],q[4];\nrz(pi/2) q[4];\nsx q[4];\nrz(-pi/2) q[5];\nry(pi/2) q[5];\ncx q[5],q[4];\nrz(-0.06624411216694612) q[4];\ncx q[5],q[4];\nry(0.023611072519314852) q[4];\nrz(0.02361107491507841) q[5];\nrx(-pi/2) q[5];\nrx(-pi/2) q[6];\nry(-pi/2) q[7];\nrz(-pi) q[7];\ncx q[7],q[6];\nrz(0.06624411216694612) q[6];\ncx q[7],q[6];\nrz(pi/2) q[6];\nsx q[6];\nrz(-pi/2) q[7];\nry(pi/2) q[7];\ncx q[7],q[6];\nrz(-0.06624411216694612) q[6];\ncx q[7],q[6];\nry(-1.5471852542755817) q[6];\nrz(-pi) q[6];\nrz(0.02361107491507841) q[7];\nrx(-pi/2) q[7];\nbarrier q[0],q[1],q[2],q[3],q[4],q[5],q[6],q[7];\nmeasure q[0] -> meas[0];\nmeasure q[1] -> meas[1];\nmeasure q[2] -> meas[2];\nmeasure q[3] -> meas[3];\nmeasure q[4] -> meas[4];\nmeasure q[5] -> meas[5];\nmeasure q[6] -> meas[6];\nmeasure q[7] -> meas[7];",
+ "group_details": [
+  {
+   "group": 0,
+   "basis": "XX",
+   "num_terms": 3,
+   "coefficient_norm": 0.35549614895141624,
+   "shots": 1000,
+   "mean": -0.013310158927090386,
+   "stderr": 0.006521031841854298
+  },
+  {
+   "group": 1,
+   "basis": "XZ",
+   "num_terms": 2,
+   "coefficient_norm": 0.6724428106243923,
+   "shots": 1000,
+   "mean": -0.5436304850417212,
+   "stderr": 0.00635974169427127
+  },
+  {
+   "group": 2,
+   "basis": "ZX",
+   "num_terms": 2,
+   "coefficient_norm": 0.6724428106243923,
+   "shots": 1000,
+   "mean": -0.5480848596040445,
+   "stderr": 0.00619997933335127
+  },
+  {
+   "group": 3,
+   "basis": "ZZ",
+   "num_terms": 1,
+   "coefficient_norm": 0.09337411472634716,
+   "shots": 1000,
+   "mean": 0.08982589836674597,
+   "stderr": 0.0008066498419410788
+  }
+ ],
+ "runtime_s": 6.264962500004913,
+ "software_versions": {
+  "python": "3.12.11",
+  "numpy": "2.5.4",
+  "scipy": "1.18.1",
+  "pyscf": "2.14.0",
+  "qiskit": "2.5.2",
+  "qiskit_nature": "0.8.0",
+  "qiskit_aer": "0.17.2",
+  "qiskit_ionq": "1.1.1"
+ },
+ "status": "ok",
+ "error": null,
+ "compiled_qasm_kind": "submitted_circuit",
+ "backend_detail": "ionq_simulator",
+ "max_qubits": 29,
+ "executions": 1000,
+ "seed": null,
+ "system": "mol-e800703408",
+ "geometry_id": "mol-e800703408-8ea80792de",
+ "problem_key": "e800703408042e749fd087d5a0d94ced39832fee9945235373ba8594e32b164b",
+ "reference_energy": -2.8510240299774203,
+ "reference_kind": "FCI",
+ "planned": {
+  "circuits": 1,
+  "width": 8,
+  "shots": 1000,
+  "executions": 1000,
+  "qubits_per_circuit": [
+   8
+  ],
+  "register_qubits": [
+   29
+  ],
+  "depths": [
+   13
+  ],
+  "ops": [
+   {
+    "rz": 24,
+    "cx": 16,
+    "ry": 12,
+    "measure": 8,
+    "rx": 6,
+    "sx": 6,
+    "p": 2,
+    "barrier": 1
+   }
+  ]
+ },
+ "notes": [
+  "packed: group copies are independent (product state), stderr = sqrt(sum_g Var(E_g))"
+ ],
+ "created_at": "2026-10-10T20:23:39-0400"
+}

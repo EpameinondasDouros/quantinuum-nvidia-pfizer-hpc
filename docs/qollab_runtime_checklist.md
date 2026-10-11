@@ -40,3 +40,13 @@ Project (draft, unpublished): https://qollab.xyz/u/udsy/genqai-one-shot-quantum-
 - Other community projects do textbook VQE: qOrbital (UCCSD-VQE with an orbital visualizer) and Quantum Advantage Lab (a hardware-efficient RXX ansatz). qOrbital's LiH UCCSD-VQE needed 1,035 evaluations and about 1.5 h on a laptop. **Our pitch on Qollab: the circuit and its angles come from one model call, so no optimizer loop runs in the browser.**
 - Their teaching listings send one IonQ job per measurement basis, so a run needs several presses. We send all qubit-wise-commuting groups in one multi-circuit job, which IonQProvider supports. That is worth pointing out to judges.
 - Their H₂ noise table: 3 gates at 0.1% / 1% depolarizing already costs +9 mHa. This matches our finding that gate count is the hardware lever.
+
+## Phase 2: what the Qollab bundle includes
+
+The bundle (`qollab/`, rebuilt by `scripts/build_qollab_bundle.py`) keeps its fixed-flow `main.py`:
+the trained presets, a live RHF-only Hamiltonian, NumPy inference, comparison with baselines and live
+ADAPT, and packed single-circuit IonQ measurement. The phase-2 workbench features (RDKit SMILES
+conformers, arbitrary molecules, routing UI, optimisation, exports) are local only
+(`streamlit run app/workbench.py`): Qollab has no RDKit or PyTorch, and its PySCF build lacks
+CASCI/FCI/CC. `genqai/__init__.py` imports torch first only when torch is installed (a macOS OpenMP
+init-order fix), so it's a no-op in Pyodide.

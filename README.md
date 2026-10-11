@@ -1,4 +1,4 @@
-# GenQAI: one-shot quantum chemistry circuits, reproduced and stress-tested
+# GenQAI: a molecular quantum-circuit workbench built on one-shot circuit generation
 
 Qollab × IonQ Global Quantum Hackathon, Oct 10–11, 2026. MIT licence.
 
@@ -8,6 +8,11 @@ instead of running ADAPT's operator search and VQE loop. We rebuilt the complete
 scale in Qiskit: chemistry → ADAPT teacher → Hamiltonian-conditioned transformer → GRPO →
 self-distillation → budget-conditioned generation → IonQ execution. We then benchmarked it against
 every baseline a careful reviewer would ask for, on geometries nobody looked at during development.
+
+GenQAI is now a workbench around that idea. Enter a molecule as a preset, SMILES, XYZ or coordinates.
+It builds the active-space Hamiltonian, decides whether a trained model actually covers the problem,
+proposes a complete circuit, grades it independently, optionally optimises it, runs it on a simulator
+or IonQ's cloud simulators, and exports everything.
 
 **Run it in the browser:** the Qollab project (`qollab/`) builds the Hamiltonian for any bond length
 live with PySCF, generates the circuit with the transformer (NumPy, about 20 ms), scores it exactly,
@@ -51,15 +56,66 @@ pool gradients per geometry. Chemical accuracy is |E − E_FCI| ≤ 1.6 mHa.
 4. **Nothing one-shot extrapolates.** Beyond the training range (LiH at 4.1–4.4 Å) every one-shot
    method misses, by 6–150 mHa. Refinement and ADAPT don't. That is why LiH shows 71% for all one-shot
    methods: the 10 in-range points are all correct and the 4 extrapolated ones all fail.
-5. **On IonQ, gate count is what matters.** H₂'s 4-CX circuit measures +7.8 ± 5.8 mHa on IonQ's
-   Forte 1 noise model via Qollab. LiH's 172-CX circuit is about 460 mHa off under the same kind of noise
+5. **On IonQ, gate count is what matters.** H₂'s 4-CX circuit measured +7.8 ± 5.8 mHa (r = 1.33 Å,
+   through Qollab, job `01a12826-5478-72af-b517-c3e60f663d79`) and +25.0 ± 6.4 mHa (r = 0.8 Å, via the
+   API, job `01a12845-095c-73f9-b107-03d2aa0cef79`) on IonQ's Forte 1 noise model. Treat these as two
+   samples, not a calibrated error. A custom molecule ran too: HeH⁺ (ADAPT circuit, 4 groups packed
+   on 8 qubits) gave +36.1 ± 11.0 mHa, job `01a12858-0690-7546-94e7-76cddf9f0e3f`. LiH's 172-CX circuit is about 460 mHa off under similar noise
    (`figures/fig6_ionq.png`).
+6. **Hardware-aware optimisation moves the gate frontier, but it isn't free.** Pruning operators and
+   re-optimising the angles reaches 1.6 mHa on 100% of held-out geometries with H₄ at about 600–670 CX
+   (from 923) and LiH-6q at 162 CX (from 298), below every zero-evaluation option at the same accuracy.
+   It costs about 250–310 (LiH-6q) and 2,400–2,900 (H₄) energy evaluations per geometry, as much as or
+   more than a fresh ADAPT run. So it's a different cost class from one-shot generation, and the
+   starting generator stops mattering once evaluations are allowed (`results/hw_opt.md`,
+   `figures/fig9_hw_optimization.png`).
 
 What we do **not** claim: that the transformer beats simpler regressors here, that anything is faster
 in wall-clock time at 2–8 qubits (exact diagonalisation is instant), or quantum advantage. At this
 scale the honest contribution is a complete, open, Qiskit-native reproduction of the architecture,
 an untouched-test benchmark against strong baselines, and the gauge-fixing finding, which any
 learned or reuse-based circuit generator for molecules has to handle.
+
+## Why "zero quantum evaluations" isn't zero cost
+
+One-shot generation makes no quantum energy evaluations *to propose the circuit*: the operators and
+angles come from one model call. Everything around it costs something, and the workbench reports each
+part separately:
+- building the Hamiltonian (classical SCF and integrals);
+- training the model (the ADAPT teacher runs and model fitting, amortised over new geometries in
+  `figures/fig5_breakeven.png`);
+- grading against an exact reference;
+- best-of-K ranking (K energy evaluations);
+- refinement;
+- measuring the energy on a device (shots × measurement groups).
+
+## The workbench
+
+```bash
+streamlit run app/workbench.py        # local; full chemistry, RDKit, PyTorch, IonQ cloud simulators
+```
+
+| Step | What happens | Code |
+| --- | --- | --- |
+| Molecule | Preset, SMILES (RDKit ETKDGv3, seeded conformers, optional MMFF/UFF), XYZ (kept verbatim) or atom table; charge, multiplicity, basis, frozen core, active space, mapping, all validated. Open shells use ROHF | `genqai/molecule.py` |
+| Capability report | Formula, electrons, qubits, whether exact FCI is feasible, packed IonQ width, limits. "Input accepted", "Hamiltonian built", "trained model covers it", "fallback available" and "backend can run it" are shown as separate answers | `molecule.assess` |
+| Hamiltonian | Frozen-core active space from one RHF (only the PySCF parts that also run in the browser), FCI by sector diagonalisation, CCSD where available. Presets reproduce the committed data exactly | `genqai/chemistry.py` |
+| Routing | **A**: a trained model covers it and it's inside the validated range. **B**: compatible but out of range, so labelled experimental, with refine or ADAPT recommended. **C**: no compatible model, so ADAPT/UCCSD runs and the circuit is saved as potential teacher data. **D**: too big, with suggestions instead of a silently smaller problem. The default method is the best on the VAL split; that's kernel ridge on every trained system | `genqai/registry.py`, `models/registry.json` |
+| Generate | Transformer (SFT / GRPO / budget), kernel ridge, nearest-neighbour, ADAPT, UCCSD, with "+refine" and best-of-K. Each run logs forward passes, candidates and quantum evaluations to propose | `genqai/generate.py` |
+| Grade | Stage 1: validity (qubits, operators, finite angles, norm, particle number and S_z, no energy below the exact ground state) and accuracy vs FCI, or labelled unverified when FCI isn't available. Stage 2: resources (gates, 2-qubit gates, depth, CX, IonQ-native counts where the compiler gives them, measurement groups, shots for a target error) ranked on a Pareto front among circuits that meet the target only | `genqai/grading.py` |
+| Optimise | Angle refinement, exact merging of repeated operators, operator pruning with re-refinement, transpiler level 3, noise-aware selection. The original is kept and the same Hamiltonian is checked | `genqai/optimize.py` |
+| Execute | Statevector, local shots, local noisy (our own approximation), IonQ cloud simulators (ideal, Forte 1, Aria 1). Paid hardware is never offered. Width is checked before anything is submitted | `genqai/backends.py`, `genqai/execution.py` |
+| Export and history | Qiskit script (reproduces the statevector to 1e-10), OpenQASM 2/3, Hamiltonian/metadata JSON, measurement and benchmark CSV; experiments saved locally with a configuration hash | `genqai/export.py`, `genqai/store.py`, `genqai/jobs.py` |
+
+Worked examples that run end to end (`tests/test_e2e.py`, `docs/custom_molecules.md`): HeH⁺ from XYZ,
+water from SMILES and the OH radical (open shell) go to path C. ADAPT reaches FCI on each, and FCI
+matches PySCF CASCI to 1e-8. H₂ typed in by hand along any axis is recognised as the trained H₂ family
+(path A, kernel ridge). LiH beyond 4 Å goes to path B, labelled experimental.
+
+What runs where: the Qollab bundle (`qollab/main.py`) runs in the browser on the trained presets, with
+a live PySCF Hamiltonian, NumPy inference, grading and the IonQ run. Arbitrary molecules, RDKit
+conformers, the full solver fallback and the workbench UI are local only: Qollab has no RDKit or
+PyTorch, and its PySCF build lacks CASCI/FCI/CC. Nothing depends on a private server.
 
 ## Systems
 
@@ -77,7 +133,8 @@ held-out contiguous interval, extrapolation beyond the range, and test_fresh.
 
 ```bash
 uv venv -p 3.12 .venv && uv pip install -p .venv/bin/python -e ".[dev]"
-.venv/bin/python -m pytest -q                                  # 79 tests, about 40 s
+.venv/bin/python -m pytest -q                                  # see "Tests" below
+.venv/bin/streamlit run app/workbench.py                       # the workbench
 
 .venv/bin/python scripts/run_pipeline.py --quick               # H2 + LiH from scratch, about 90 s
 .venv/bin/python scripts/run_pipeline.py --skip-train          # everything, using committed checkpoints
@@ -108,6 +165,8 @@ Details are in `docs/qollab_runtime_checklist.md`.
 | Scoring harness | `genqai/evaluate.py`, `genqai/sim.py` (exact, adjoint gradients) | EvalRecords |
 | Grouped measurement, IonQ | `genqai/measure.py`, `scripts/run_ionq_demo.py` | `results/<s>/ionq_demo_*.json` |
 | NumPy inference for the browser | `genqai/infer_numpy.py` | `qollab/checkpoints/` |
+| Molecule input, routing, generation, grading, optimisation, execution | see "The workbench" | `runs/experiments/` (local) |
+| Hardware-aware optimisation study | `scripts/run_hw_optimization.py` | `results/hw_opt.md`, `results*/<s>/hw_opt.jsonl` |
 | Figures | `genqai/figures.py` | `figures/` |
 
 Conventions (`genqai/schema.py`): Qiskit qubit order, total energies in Hartree, operator IDs index
@@ -125,6 +184,30 @@ Conventions (`genqai/schema.py`): Qiskit qubit order, total energies in Hartree,
 | `fig6_ionq` | Measured energies on local and IonQ simulators |
 | `fig7_budget_frontier` | Accuracy vs CX budget: budget policy vs truncated ADAPT vs regression |
 | `fig8_learning_curve` | Accuracy vs training-set size |
+| `fig9_hw_optimization` | Prune + refine vs zero-evaluation methods: CX, accuracy and evaluation cost |
+
+## Tests
+
+`.venv/bin/python -m pytest -q`: **222 passed, 4 skipped** (about 60 s, Oct 11, 2026). The skips:
+- 3 need the optional `qiskit_qasm3_import` package to load exported QASM 3 back;
+- 1 is the live IonQ job, which runs only with `GENQAI_LIVE_IONQ=1` and a key.
+
+Coverage includes the preset benchmark Hamiltonians (exact to 1e-12 through the generic molecule path),
+FCI = PySCF CASCI, packed = grouped = statevector measurement (to 1e-12 on analytic Hamiltonians),
+error-bar calibration, routing paths A–D, refusal of incompatible models, grading status logic, the
+optimisation invariants, export reproducibility, and the Streamlit app (headless).
+
+## Known limitations
+
+- Trained models cover four fixed active-space problems (H₂, LiH 4q/6q, H₄ chain) along their
+  geometry families. Other molecules run through ADAPT/UCCSD, not a trained generator.
+- One-shot accuracy holds inside the training range only; beyond it, refine or run ADAPT.
+- Packed single-circuit IonQ measurement needs groups × qubits ≤ 29, which is in practice H₂ only.
+  Larger systems run on local simulators.
+- Open-shell pools conserve S_z but not S².
+- Local noisy simulation is our own depolarising model, not IonQ's. IonQ numbers come from IonQ's simulators.
+- Optimisation evaluation counts treat one BFGS gradient call as one evaluation; on hardware,
+  parameter-shift gradients cost about 2 × the number of angles.
 
 ## Credits
 
