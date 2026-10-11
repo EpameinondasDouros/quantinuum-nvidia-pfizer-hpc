@@ -706,4 +706,92 @@ def make_all(results_dir, out_dir) -> dict[str, str]:
         why="no results/<system>/*_frontier.jsonl")
     (out_dir / "summary.md").write_text(summary_markdown(data))
     report["summary"] = str(out_dir / "summary.md")
+    run("fig9_hw_optimization", fig_hw_optimization, results_dir, out_dir,
+        why="no results/<system>/hw_opt.jsonl (scripts/run_hw_optimization.py)")
     return report
+
+
+# ------------------------------------------------------ figure 9: hardware-aware optimisation
+
+HW_START_STYLE = {  # start circuit -> (color, label); color follows the method family used in fig7
+    "sft": (GEN_MODE_COLOR["oneshot"], "SFT one-shot"),
+    "krr": (BASE_COLOR["angle_regression"], "angle KRR (full sequence)"),
+    "adapt": (BASE_COLOR["adapt"], "fresh ADAPT"),
+}
+
+
+def fig_hw_optimization(results_dir, out_dir):
+    """Per system and held-out group: % within 1.6 mHa vs mean compiled CX for each start circuit before
+    (small dot) and after prune + refine (genqai.optimize, filled = oracle, hollow = reference-free), over
+    the zero-evaluation KRR-prefix frontier and truncated ADAPT (results/<system>/budget_frontier.jsonl)."""
+    results_dir = Path(results_dir)
+    data = {}
+    for s in SYSTEMS:
+        rows = []
+        for d in (results_dir, results_dir.parent / "results_fresh"):
+            p = d / s / "hw_opt.jsonl"
+            if p.exists():
+                rows += [r for r in load_jsonl(p) if r["phase"] == "test"]
+        fr = results_dir / s / "budget_frontier.jsonl"
+        if rows and fr.exists():
+            data[s] = (rows, load_jsonl(fr))
+    if not data:
+        return None
+    fig, axes = plt.subplots(len(data), 2, figsize=(10, 3.6 * len(data)), squeeze=False)
+    for i, (s, (rows, frontier)) in enumerate(data.items()):
+        for j, (gname, pred) in enumerate(FRONTIER_GROUPS):
+            ax = axes[i, j]
+            for curve in ("regress_prefix", "adapt"):
+                color, marker, ls, label = FRONTIER_STYLE[curve]
+                pts = []
+                for lv in sorted({r["level"] for r in frontier if r["curve"] == curve}):
+                    sel = [r for r in frontier if r["curve"] == curve and r["level"] == lv and pred(r["split"])]
+                    if sel:
+                        pts.append((np.mean([r["cnot_count"] for r in sel]),
+                                    100 * np.mean(np.abs([r["err_mha"] for r in sel]) <= CHEM_ACC)))
+                if pts:
+                    x, y = np.array(pts).T
+                    ax.plot(x, y, color=color, marker=marker, ls=ls, lw=1.5, ms=5, mec=SURFACE, mew=1.0, alpha=0.8,
+                            label=label)
+            evals = []
+            for start, (color, label) in HW_START_STYLE.items():
+                sel = {m: [r for r in rows if r["start"] == start and r["mode"] == m and pred(r["split"])]
+                       for m in ("oracle", "blind")}
+                if not sel["oracle"]:
+                    continue
+                b = sel["oracle"]
+                x0 = np.mean([r["start_cx"] for r in b])
+                y0 = 100 * np.mean(np.abs([r["start_err_mha"] for r in b]) <= CHEM_ACC)
+                ax.scatter(x0, y0, s=30, color=color, edgecolors=SURFACE, linewidths=1.0, zorder=4)
+                for m, face in (("oracle", color), ("blind", SURFACE)):
+                    v = sel[m]
+                    x1 = np.mean([r["cx"] for r in v])
+                    y1 = 100 * np.mean([r["status"] == "valid_meets_target" for r in v])
+                    ax.annotate("", (x1, y1), (x0, y0), arrowprops=dict(arrowstyle="-|>", color=color, lw=1.0,
+                                                                        alpha=0.6, shrinkA=4, shrinkB=5))
+                    ax.scatter(x1, y1, s=80, marker="P", facecolor=face, edgecolors=color, linewidths=1.6, zorder=5,
+                               label=f"{label} + prune/refine ({'exact reference' if m == 'oracle' else 'reference-free'})")
+                evals.append(f"{label}: +{np.mean([r['evals_used'] for r in sel['oracle']]):.0f}")
+            ax.text(0.98, 0.04, "mean prune/refine energy evals (exact ref.)\n" + "\n".join(evals),
+                    transform=ax.transAxes, ha="right", va="bottom", fontsize=7, color=INK2,
+                    bbox=dict(facecolor=SURFACE, edgecolor="none", alpha=0.9, pad=2), zorder=6)
+            n = len({r["geometry_id"] for r in rows if pred(r["split"])})
+            ax.set_title(f"{SYSTEM_LABEL[s]} — {gname}, {n} geometries", loc="left")
+            ax.set_ylim(-3, 105)
+            ax.set_ylabel("% within 1.6 mHa")
+            ax.set_xlabel("mean compiled CX count (Qiskit CX basis, level 1)")
+    seen = {}
+    for ax in axes.flat:
+        for h, lab in zip(*ax.get_legend_handles_labels()):
+            seen.setdefault(lab, h)
+    leg = fig.legend(seen.values(), seen.keys(), loc="upper center", ncol=2, bbox_to_anchor=(0.5, 0.0),
+                     title="Small dot = start circuit as generated; arrow = greedy prune + BFGS refine to stay within "
+                           "1.6 mHa (filled: exact FCI reference; hollow: reference-free, tolerance chosen on VAL).\n"
+                           "Lines are zero-evaluation KRR prefixes and truncated ADAPT (fig7). Prune/refine spends "
+                           "energy evaluations (panel text): a different cost class from one-shot. SFT and KRR starts share the "
+                           "canonical sequence, so after refinement their points coincide.", title_fontsize=7.5)
+    leg.get_title().set_color(INK2)
+    fig.suptitle("Hardware-aware optimisation: does prune + refine move the accuracy-vs-CX frontier?", x=0.01,
+                 ha="left", fontsize=11, color=INK)
+    fig.tight_layout()
+    return _save(fig, out_dir, "fig9_hw_optimization")

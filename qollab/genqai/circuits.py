@@ -36,3 +36,14 @@ def gate_stats(qc: QuantumCircuit, optimization_level: int = 1) -> dict:
     t = transpile(qc, basis_gates=BASIS, optimization_level=optimization_level, seed_transpiler=0)
     ops = t.count_ops()
     return {"cnot_count": int(ops.get("cx", 0)), "depth": int(t.depth()), "num_gates": int(sum(ops.values()))}
+
+
+def resource_stats(qc: QuantumCircuit, optimization_level: int = 1) -> dict:
+    """Richer counts than gate_stats: logical depth (one box per PauliEvolutionGate) plus the compiled
+    circuit in the same CX basis with the same transpile settings, so
+    cx_qiskit == gate_stats(qc, optimization_level)["cnot_count"]."""
+    t = transpile(qc, basis_gates=BASIS, optimization_level=optimization_level, seed_transpiler=0)
+    arity = [inst.operation.num_qubits for inst in t.data]
+    return {"optimization_level": optimization_level, "logical_depth": int(qc.depth()),
+            "cx_qiskit": int(t.count_ops().get("cx", 0)), "gates_total": len(arity),
+            "gates_1q": arity.count(1), "gates_2q": arity.count(2), "compiled_depth": int(t.depth())}
