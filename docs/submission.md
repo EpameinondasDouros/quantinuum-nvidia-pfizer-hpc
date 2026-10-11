@@ -48,7 +48,7 @@ qubits, or quantum advantage.
 conformers, charge/spin/active-space control, routing into validated / experimental / new-domain /
 too-large paths, two-stage grading with a Pareto front, optimisation, exports (Qiskit, QASM, JSON, CSV).
 
-Code, data, checkpoints, tests and figures: https://github.com/EpameinondasDouros/quantinuum-nvidia-pfizer-hpc (MIT).
+Code, data, checkpoints, tests and figures: https://github.com/udsy19/genqai (MIT).
 Attribution: ATTRIBUTION.md.
 
 ## Tags

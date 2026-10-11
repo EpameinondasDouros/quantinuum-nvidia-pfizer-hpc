@@ -1,7 +1,7 @@
 # GenQAI: one-shot quantum chemistry circuits
 
 **Team The Quantubians** · Qollab × IonQ Global Quantum Hackathon, Oct 9–11, 2026 · MIT licence ·
-Code, data and the full local workbench: https://github.com/EpameinondasDouros/quantinuum-nvidia-pfizer-hpc
+Code, data and the full local workbench: https://github.com/udsy19/genqai
 
 ## What it does
 
