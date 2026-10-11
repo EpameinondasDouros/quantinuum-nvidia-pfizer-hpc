@@ -45,6 +45,7 @@ from pathlib import Path
 import numpy as np
 
 from genqai.generate import LEARNED_KINDS, SOLVERS, TRANSFORMER_STAGES, torch_available, train_set
+from genqai.molecule import family_params
 from genqai.schema import HamiltonianRecord
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -52,7 +53,6 @@ REGISTRY_PATH = ROOT / "models" / "registry.json"
 SCHEMA = "genqai.registry/v1"
 GEOMETRY_TOL_A = 1e-3
 DISTANCE_FACTOR = 1.0
-PARAM_DECIMALS = 6
 RECOMMEND_TIEBREAK = ("krr", "transformer_sft", "transformer_grpo", "transformer_budget", "angle_interp",
                       "nn_reuse_gauge")  # cheapest/simplest first among exact ties
 GAUGE_CONVENTION = "orbital-parity-argmax-ref"  # genqai.features.Featurizer gauge fixing
@@ -151,12 +151,12 @@ def problem_signature(record: HamiltonianRecord | None = None, mol=None, config=
     atoms = _atoms(record, mol)
     sig: dict = {"formula": hill_formula(s for s, _ in atoms) if atoms else None}
     sig["basis"] = (record.basis if record is not None else getattr(mol, "basis", None) or "").lower() or None
-    sig["charge"] = getattr(record, "charge", None)
-    sig["multiplicity"] = getattr(record, "multiplicity", None)
-    if sig["charge"] is None:
-        sig["charge"] = int(getattr(mol, "charge", 0))
-    if sig["multiplicity"] is None:
-        sig["multiplicity"] = int(getattr(mol, "multiplicity", 1))
+    for key, default in (("charge", 0), ("multiplicity", 1)):
+        from_record, from_mol = getattr(record, key, None), getattr(mol, key, None)
+        if from_record is not None and from_mol is not None and int(from_record) != int(from_mol):
+            sig[key] = "inconsistent"  # record and molecule describe different problems: matches no card
+        else:
+            sig[key] = int(from_record if from_record is not None else from_mol if from_mol is not None else default)
     if record is not None:
         sig.update(active=[record.active_electrons, len(record.active_orbitals)], mapping=record.mapping,
                    num_qubits=record.num_qubits)
@@ -174,26 +174,6 @@ def problem_signature(record: HamiltonianRecord | None = None, mol=None, config=
         if config is not None:
             sig["mapping"] = config.mapping
     return {k: v for k, v in sig.items() if v is not None}
-
-
-def family_params(kind: str, atoms: list[tuple[str, np.ndarray]]) -> tuple[float, ...] | None:
-    """Geometry-family parameters of `atoms` (any orientation/translation), or None if not in the family."""
-    X = np.array([x for _, x in atoms]) if atoms else np.zeros((0, 3))
-    if kind == "diatomic":
-        return (round(float(np.linalg.norm(X[1] - X[0])), PARAM_DECIMALS),) if len(X) == 2 else None
-    if kind == "linear_h4":
-        if len(X) != 4 or any(s != "H" for s, _ in atoms):
-            return None
-        c = X - X.mean(0)
-        u = np.linalg.svd(c)[2][0]  # principal axis
-        t = c @ u
-        if np.abs(c - np.outer(t, u)).max() > GEOMETRY_TOL_A:  # not collinear
-            return None
-        d1, d2, d3 = np.diff(np.sort(t))
-        if abs(d1 - d3) > GEOMETRY_TOL_A:
-            return None
-        return round(float((d1 + d3) / 2), PARAM_DECIMALS), round(float(d2), PARAM_DECIMALS)
-    raise ValueError(kind)
 
 
 @lru_cache(maxsize=None)
@@ -242,7 +222,7 @@ def _match(record, mol, config=None, report=None, cards=None) -> tuple[str | Non
             if extra:
                 reasons.append(f"{system}: {len(extra)} Pauli terms outside the trained vocabulary")
                 continue
-        params = family_params(cs[0].family["kind"], atoms)
+        params = family_params(cs[0].family["kind"], atoms, tol=GEOMETRY_TOL_A)
         if params is None:
             reasons.append(f"{system}: geometry is not in the {cs[0].family['kind']} family")
             continue

@@ -361,20 +361,38 @@ def _preset_candidates(mol: MoleculeSpec) -> list[tuple[str, tuple[float, ...]]]
         family = SYSTEMS[mol.preset[0]].molecule
         return [mol.preset] + [(s, mol.preset[1]) for s in PRESETS if SYSTEMS[s].molecule == family and s != mol.preset[0]]
     syms = sorted(s for s, _ in mol.atoms)
-    xyz = np.array([p for _, p in mol.atoms])
+    atoms = [(s, np.asarray(p, float)) for s, p in mol.atoms]
     if syms in (["H", "H"], ["H", "Li"]):
-        r = (round(float(np.linalg.norm(xyz[1] - xyz[0])), 6),)
+        r = family_params("diatomic", atoms)
         return [("h2", r)] if syms == ["H", "H"] else [("lih4", r), ("lih6", r)]
     if syms == ["H"] * 4:
-        axis = xyz[np.argmax(np.linalg.norm(xyz - xyz[0], axis=1))] - xyz[0]
-        axis = axis / np.linalg.norm(axis)
-        t = (xyz - xyz[0]) @ axis
-        if np.abs(xyz - xyz[0] - np.outer(t, axis)).max() > 1e-6:
-            return []
-        a, b, c = np.diff(np.sort(t))
-        if abs(a - c) <= 1e-6:
-            return [("h4", (round(float(a), 6), round(float(b), 6)))]
+        ab = family_params("linear_h4", atoms)
+        return [("h4", ab)] if ab is not None else []
     return []
+
+
+def family_params(kind: str, atoms, tol: float = 1e-6, decimals: int = 6) -> tuple[float, ...] | None:
+    """Geometry-family parameters of `atoms` [(symbol, xyz)] in any orientation/translation, or None.
+
+    "diatomic" -> (r,); "linear_h4" -> (a, b) for 4 collinear H with end spacings equal within `tol` (Å).
+    The single implementation used both for building presets (tol 1e-6) and for registry routing.
+    """
+    X = np.array([np.asarray(x, float) for _, x in atoms]) if atoms else np.zeros((0, 3))
+    if kind == "diatomic":
+        return (round(float(np.linalg.norm(X[1] - X[0])), decimals),) if len(X) == 2 else None
+    if kind == "linear_h4":
+        if len(X) != 4 or any(s != "H" for s, _ in atoms):
+            return None
+        c = X - X.mean(0)
+        u = np.linalg.svd(c)[2][0]  # principal axis
+        t = c @ u
+        if np.abs(c - np.outer(t, u)).max() > tol:  # not collinear
+            return None
+        d1, d2, d3 = np.diff(np.sort(t))
+        if abs(d1 - d3) > tol:
+            return None
+        return round(float((d1 + d3) / 2), decimals), round(float(d2), decimals)
+    raise ValueError(kind)
 
 
 def preset_family(mol: MoleculeSpec) -> tuple[str, tuple[float, ...]] | None:
