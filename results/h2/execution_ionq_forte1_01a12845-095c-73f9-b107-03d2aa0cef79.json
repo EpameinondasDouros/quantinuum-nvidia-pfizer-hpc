@@ -1,0 +1,88 @@
+{
+ "execution_id": "20261010T200254-225a618f",
+ "backend": "ionq_simulator_forte-1",
+ "noise_model": "forte-1",
+ "shots": 2000,
+ "packed": true,
+ "num_groups": 2,
+ "width": 4,
+ "energy": -1.1091766426751735,
+ "stderr": 0.006415669360320882,
+ "error_mha": 24.97102400192297,
+ "job_id": "01a12845-095c-73f9-b107-03d2aa0cef79",
+ "compiled_qasm": "OPENQASM 2.0;\ninclude \"qelib1.inc\";\nqreg q[29];\ncreg meas[4];\nrx(-pi/2) q[0];\nry(-pi/2) q[1];\nrz(-pi) q[1];\ncx q[1],q[0];\nrz(0.12552233158982323) q[0];\ncx q[1],q[0];\nrz(pi/2) q[0];\nsx q[0];\nrz(-pi/2) q[1];\nry(pi/2) q[1];\ncx q[1],q[0];\nrz(-0.12552233158982323) q[0];\ncx q[1],q[0];\np(pi/2) q[1];\nsx q[1];\nrx(-pi/2) q[2];\nry(-pi/2) q[3];\nrz(-pi) q[3];\ncx q[3],q[2];\nrz(0.12552233158982323) q[2];\ncx q[3],q[2];\nrz(pi/2) q[2];\nsx q[2];\nrz(-pi/2) q[3];\nry(pi/2) q[3];\ncx q[3],q[2];\nrz(-0.12552233158982323) q[2];\ncx q[3],q[2];\nry(-pi/2) q[2];\nrz(-pi) q[2];\nrx(-pi/2) q[3];\nbarrier q[0],q[1],q[2],q[3];\nmeasure q[0] -> meas[0];\nmeasure q[1] -> meas[1];\nmeasure q[2] -> meas[2];\nmeasure q[3] -> meas[3];",
+ "group_details": [
+  {
+   "group": 0,
+   "basis": "XX",
+   "num_terms": 1,
+   "coefficient_norm": 0.18462678355606077,
+   "shots": 2000,
+   "mean": -0.0380331174125485,
+   "stderr": 0.004040845184855996
+  },
+  {
+   "group": 1,
+   "basis": "ZZ",
+   "num_terms": 3,
+   "coefficient_norm": 0.7307285839293726,
+   "shots": 2000,
+   "mean": -0.6694022418017554,
+   "stderr": 0.004983210163437447
+  }
+ ],
+ "runtime_s": 6.268937290995382,
+ "software_versions": {
+  "python": "3.12.11",
+  "numpy": "2.5.4",
+  "scipy": "1.18.1",
+  "pyscf": "2.14.0",
+  "qiskit": "2.5.2",
+  "qiskit_nature": "0.8.0",
+  "qiskit_aer": "0.17.2",
+  "qiskit_ionq": "1.1.1"
+ },
+ "status": "ok",
+ "error": null,
+ "compiled_qasm_kind": "submitted_circuit",
+ "backend_detail": "ionq_simulator",
+ "max_qubits": 29,
+ "executions": 2000,
+ "seed": null,
+ "system": "h2",
+ "geometry_id": "h2-d2f087181a",
+ "problem_key": "",
+ "reference_energy": -1.1341476666770964,
+ "reference_kind": "FCI",
+ "planned": {
+  "circuits": 1,
+  "width": 4,
+  "shots": 2000,
+  "executions": 2000,
+  "qubits_per_circuit": [
+   4
+  ],
+  "register_qubits": [
+   29
+  ],
+  "depths": [
+   13
+  ],
+  "ops": [
+   {
+    "rz": 11,
+    "cx": 8,
+    "ry": 5,
+    "measure": 4,
+    "rx": 3,
+    "sx": 3,
+    "p": 1,
+    "barrier": 1
+   }
+  ]
+ },
+ "notes": [
+  "packed: group copies are independent (product state), stderr = sqrt(sum_g Var(E_g))"
+ ],
+ "created_at": "2026-10-10T20:02:54-0400"
+}
