@@ -328,7 +328,7 @@ def validate_molecule(mol: MoleculeSpec) -> list[str]:
     warnings = []
     if mol.smiles and "." in mol.smiles:
         warnings.append("the SMILES has several disconnected fragments ('.'); they are treated as one system")
-    elif len(mol.atoms) > 1 and _fragments(mol) > 1:
+    elif len(mol.atoms) > 1 and _fragments(mol) > 1 and preset_family(mol) is None:  # stretched presets are deliberate
         warnings.append("the geometry has non-bonded fragments; they are treated as one system")
     if mol.multiplicity > 1:
         warnings.append("open shell: ROHF reference; the UCCSD pool conserves S_z but not S^2")
