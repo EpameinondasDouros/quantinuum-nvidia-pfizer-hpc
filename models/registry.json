@@ -1,0 +1,2165 @@
+{
+ "schema": "genqai.registry/v1",
+ "geometry_tol_angstrom": 0.001,
+ "distance_factor": 1.0,
+ "cards": [
+  {
+   "id": "h2/transformer_sft",
+   "kind": "transformer_sft",
+   "system": "h2",
+   "checkpoint": "checkpoints/h2/sft.pt",
+   "checkpoint_sha256": "8b40ee363a2b7494a6b2c3231a64e11947b888d1ad6c20c3b74175f98a0818e8",
+   "signature": {
+    "formula": "H2",
+    "basis": "sto-3g",
+    "charge": 0,
+    "multiplicity": 1,
+    "active": [
+     2,
+     2
+    ],
+    "mapping": "parity",
+    "num_qubits": 2,
+    "pool_size": 3,
+    "pauli_vocab_sha256": "b3799c0b68ba87c09dad5ef547e27a2619a55bd3811575f73171cfb4574c6d3f",
+    "pauli_vocab_size": 5,
+    "gauge_convention": "orbital-parity-argmax-ref:65a714b1ab0bb6fb"
+   },
+   "family": {
+    "kind": "diatomic",
+    "params": [
+     "r"
+    ],
+    "elements": [
+     "H",
+     "H"
+    ],
+    "train_range": {
+     "r": [
+      0.5,
+      2.1
+     ]
+    },
+    "feature_distance": {
+     "space": "standardised gauge-fixed Pauli coefficients (genqai.features.fit_featurizer, TRAIN mean/std)",
+     "train_loo_nn_max": 1.361548,
+     "train_loo_nn_median": 0.845639,
+     "threshold": 1.361548,
+     "rule": "nearest-TRAIN distance <= 1 x max leave-one-out NN distance of TRAIN"
+    }
+   },
+   "train_dataset": "data/h2/hamiltonians.jsonl (split=train, n=10) + data/h2/teacher_canonical.jsonl (canonical ADAPT labels)",
+   "validation": {
+    "val": {
+     "n": 3,
+     "median_abs_err_mha": 0.001222,
+     "max_abs_err_mha": 0.025774,
+     "frac_under_1.6mha": 1.0,
+     "pct_under_1.6mha": 100.0,
+     "valid_frac": 1.0,
+     "mean_num_operators": 1.0,
+     "mean_cnot_count": 4.0,
+     "quantum_evals_to_propose": 0,
+     "source": "computed by scripts/build_registry.py: one-shot generation on the VAL split, exact statevector energy (genqai.evaluate.score_circuit)"
+    },
+    "test_fresh": {
+     "n": 14,
+     "median_abs_err_mha": 0.004006,
+     "max_abs_err_mha": 4.084382,
+     "frac_under_1.6mha": 0.714286,
+     "pct_under_1.6mha": 71.428571,
+     "valid_frac": 1.0,
+     "mean_num_operators": 1.0,
+     "mean_cnot_count": 4.0,
+     "source": "results_fresh/h2/sft_oneshot.jsonl",
+     "display_only": true,
+     "interp": {
+      "n": 10,
+      "median_abs_err_mha": 0.003281,
+      "max_abs_err_mha": 0.006884,
+      "pct_under_1.6mha": 100.0
+     },
+     "extrap": {
+      "n": 4,
+      "median_abs_err_mha": 3.067959,
+      "max_abs_err_mha": 4.084382,
+      "pct_under_1.6mha": 0.0
+     }
+    }
+   },
+   "modes": [
+    "oneshot",
+    "bestofk",
+    "refine"
+   ],
+   "limitations": [
+    "fixed problem: H2 sto-3g CAS(2e, 2o) parity mapping, 2 qubits; any other molecule, active space or mapping has no compatible generator (path C)",
+    "validated only inside the TRAIN range (r in [0.5, 2.1] Å) and within the feature-distance threshold",
+    "one-shot fails beyond the training edge (r > 2.1 Å): on the 4 test_fresh extrapolation geometries median |err| 3.07 mHa, max 4.08 mHa, 0% within 1.6 mHa (results_fresh/h2/sft_oneshot.jsonl); use +refine or adapt there",
+    "checkpoint selected on VAL, so VAL metrics are in-sample for model selection",
+    "torch-free inference via the NumPy export (greedy one-shot only; best-of-K needs torch)"
+   ],
+   "config": {},
+   "numpy_export": "qollab/checkpoints/h2/sft.json",
+   "numpy_export_sha256": "da683d208d4e5b359bec9e1e11fd5621e7214d255b2d264402d5b101bc91a44f"
+  },
+  {
+   "id": "h2/transformer_grpo",
+   "kind": "transformer_grpo",
+   "system": "h2",
+   "checkpoint": "checkpoints/h2/grpo.pt",
+   "checkpoint_sha256": "9c020c7b93697d3e838b0fd92879b03db58d7825b056b058d47f9190d96189f8",
+   "signature": {
+    "formula": "H2",
+    "basis": "sto-3g",
+    "charge": 0,
+    "multiplicity": 1,
+    "active": [
+     2,
+     2
+    ],
+    "mapping": "parity",
+    "num_qubits": 2,
+    "pool_size": 3,
+    "pauli_vocab_sha256": "b3799c0b68ba87c09dad5ef547e27a2619a55bd3811575f73171cfb4574c6d3f",
+    "pauli_vocab_size": 5,
+    "gauge_convention": "orbital-parity-argmax-ref:65a714b1ab0bb6fb"
+   },
+   "family": {
+    "kind": "diatomic",
+    "params": [
+     "r"
+    ],
+    "elements": [
+     "H",
+     "H"
+    ],
+    "train_range": {
+     "r": [
+      0.5,
+      2.1
+     ]
+    },
+    "feature_distance": {
+     "space": "standardised gauge-fixed Pauli coefficients (genqai.features.fit_featurizer, TRAIN mean/std)",
+     "train_loo_nn_max": 1.361548,
+     "train_loo_nn_median": 0.845639,
+     "threshold": 1.361548,
+     "rule": "nearest-TRAIN distance <= 1 x max leave-one-out NN distance of TRAIN"
+    }
+   },
+   "train_dataset": "data/h2/hamiltonians.jsonl (split=train, n=10): GRPO on exact energies, initialised from checkpoints/h2/sft.pt",
+   "validation": {
+    "val": {
+     "n": 3,
+     "median_abs_err_mha": 0.000106,
+     "max_abs_err_mha": 0.012305,
+     "frac_under_1.6mha": 1.0,
+     "pct_under_1.6mha": 100.0,
+     "valid_frac": 1.0,
+     "mean_num_operators": 1.0,
+     "mean_cnot_count": 4.0,
+     "quantum_evals_to_propose": 0,
+     "source": "computed by scripts/build_registry.py: one-shot generation on the VAL split, exact statevector energy (genqai.evaluate.score_circuit)"
+    },
+    "test_fresh": {
+     "n": 14,
+     "median_abs_err_mha": 0.000302,
+     "max_abs_err_mha": 4.60979,
+     "frac_under_1.6mha": 0.714286,
+     "pct_under_1.6mha": 71.428571,
+     "valid_frac": 1.0,
+     "mean_num_operators": 1.0,
+     "mean_cnot_count": 4.0,
+     "source": "results_fresh/h2/grpo_oneshot.jsonl",
+     "display_only": true,
+     "interp": {
+      "n": 10,
+      "median_abs_err_mha": 8.3e-05,
+      "max_abs_err_mha": 0.002164,
+      "pct_under_1.6mha": 100.0
+     },
+     "extrap": {
+      "n": 4,
+      "median_abs_err_mha": 3.552129,
+      "max_abs_err_mha": 4.60979,
+      "pct_under_1.6mha": 0.0
+     }
+    }
+   },
+   "modes": [
+    "oneshot",
+    "bestofk",
+    "refine"
+   ],
+   "limitations": [
+    "fixed problem: H2 sto-3g CAS(2e, 2o) parity mapping, 2 qubits; any other molecule, active space or mapping has no compatible generator (path C)",
+    "validated only inside the TRAIN range (r in [0.5, 2.1] Å) and within the feature-distance threshold",
+    "one-shot fails beyond the training edge (r > 2.1 Å): on the 4 test_fresh extrapolation geometries median |err| 3.55 mHa, max 4.61 mHa, 0% within 1.6 mHa (results_fresh/h2/grpo_oneshot.jsonl); use +refine or adapt there",
+    "checkpoint selected on VAL, so VAL metrics are in-sample for model selection",
+    "needs torch; energy-reward GRPO did not improve held-out error over SFT (README finding 3)"
+   ],
+   "config": {},
+   "numpy_export": null,
+   "numpy_export_sha256": null
+  },
+  {
+   "id": "h2/krr",
+   "kind": "krr",
+   "system": "h2",
+   "checkpoint": null,
+   "checkpoint_sha256": null,
+   "signature": {
+    "formula": "H2",
+    "basis": "sto-3g",
+    "charge": 0,
+    "multiplicity": 1,
+    "active": [
+     2,
+     2
+    ],
+    "mapping": "parity",
+    "num_qubits": 2,
+    "pool_size": 3,
+    "pauli_vocab_sha256": "b3799c0b68ba87c09dad5ef547e27a2619a55bd3811575f73171cfb4574c6d3f",
+    "pauli_vocab_size": 5,
+    "gauge_convention": "orbital-parity-argmax-ref:65a714b1ab0bb6fb"
+   },
+   "family": {
+    "kind": "diatomic",
+    "params": [
+     "r"
+    ],
+    "elements": [
+     "H",
+     "H"
+    ],
+    "train_range": {
+     "r": [
+      0.5,
+      2.1
+     ]
+    },
+    "feature_distance": {
+     "space": "standardised gauge-fixed Pauli coefficients (genqai.features.fit_featurizer, TRAIN mean/std)",
+     "train_loo_nn_max": 1.361548,
+     "train_loo_nn_median": 0.845639,
+     "threshold": 1.361548,
+     "rule": "nearest-TRAIN distance <= 1 x max leave-one-out NN distance of TRAIN"
+    }
+   },
+   "train_dataset": "data/h2/hamiltonians.jsonl (split=train, n=10) + data/h2/teacher_canonical.jsonl (canonical ADAPT labels)",
+   "validation": {
+    "val": {
+     "n": 3,
+     "median_abs_err_mha": 7e-06,
+     "max_abs_err_mha": 0.000187,
+     "frac_under_1.6mha": 1.0,
+     "pct_under_1.6mha": 100.0,
+     "valid_frac": 1.0,
+     "mean_num_operators": 1.0,
+     "mean_cnot_count": 4.0,
+     "quantum_evals_to_propose": 0,
+     "source": "computed by scripts/build_registry.py: one-shot generation on the VAL split, exact statevector energy (genqai.evaluate.score_circuit)"
+    },
+    "test_fresh": {
+     "n": 14,
+     "median_abs_err_mha": 5.6e-05,
+     "max_abs_err_mha": 0.00057,
+     "frac_under_1.6mha": 1.0,
+     "pct_under_1.6mha": 100.0,
+     "valid_frac": 1.0,
+     "mean_num_operators": 1.0,
+     "mean_cnot_count": 4.0,
+     "source": "results_fresh/h2/angle_regression.jsonl",
+     "display_only": true,
+     "interp": {
+      "n": 10,
+      "median_abs_err_mha": 4e-05,
+      "max_abs_err_mha": 0.000216,
+      "pct_under_1.6mha": 100.0
+     },
+     "extrap": {
+      "n": 4,
+      "median_abs_err_mha": 0.000252,
+      "max_abs_err_mha": 0.00057,
+      "pct_under_1.6mha": 100.0
+     }
+    }
+   },
+   "modes": [
+    "oneshot",
+    "refine"
+   ],
+   "limitations": [
+    "fixed problem: H2 sto-3g CAS(2e, 2o) parity mapping, 2 qubits; any other molecule, active space or mapping has no compatible generator (path C)",
+    "validated only inside the TRAIN range (r in [0.5, 2.1] Å) and within the feature-distance threshold",
+    "one-shot held on the committed points but is unvalidated beyond the training edge (r > 2.1 Å): on the 4 test_fresh extrapolation geometries median |err| 0.00 mHa, max 0.00 mHa, 100% within 1.6 mHa (results_fresh/h2/angle_regression.jsonl); use +refine or adapt there",
+    "needs scikit-learn; alpha/gamma/sequence rule chosen on VAL energies, so VAL metrics are in-sample for that choice"
+   ],
+   "config": {
+    "alpha": 0.0,
+    "gamma": 0.01,
+    "seq_rule": "majority",
+    "train_labels_sha256": "9685bd9ec7eff512e94e9a0080ad051efdc1a709f21319a41f32f9df2575cd47",
+    "fit": "genqai.regression.AngleRegressor"
+   },
+   "numpy_export": null,
+   "numpy_export_sha256": null
+  },
+  {
+   "id": "h2/nn_reuse_gauge",
+   "kind": "nn_reuse_gauge",
+   "system": "h2",
+   "checkpoint": null,
+   "checkpoint_sha256": null,
+   "signature": {
+    "formula": "H2",
+    "basis": "sto-3g",
+    "charge": 0,
+    "multiplicity": 1,
+    "active": [
+     2,
+     2
+    ],
+    "mapping": "parity",
+    "num_qubits": 2,
+    "pool_size": 3,
+    "pauli_vocab_sha256": "b3799c0b68ba87c09dad5ef547e27a2619a55bd3811575f73171cfb4574c6d3f",
+    "pauli_vocab_size": 5,
+    "gauge_convention": "orbital-parity-argmax-ref:65a714b1ab0bb6fb"
+   },
+   "family": {
+    "kind": "diatomic",
+    "params": [
+     "r"
+    ],
+    "elements": [
+     "H",
+     "H"
+    ],
+    "train_range": {
+     "r": [
+      0.5,
+      2.1
+     ]
+    },
+    "feature_distance": {
+     "space": "standardised gauge-fixed Pauli coefficients (genqai.features.fit_featurizer, TRAIN mean/std)",
+     "train_loo_nn_max": 1.361548,
+     "train_loo_nn_median": 0.845639,
+     "threshold": 1.361548,
+     "rule": "nearest-TRAIN distance <= 1 x max leave-one-out NN distance of TRAIN"
+    }
+   },
+   "train_dataset": "data/h2/hamiltonians.jsonl (split=train, n=10) + data/h2/teacher.jsonl (raw ADAPT circuits)",
+   "validation": {
+    "val": {
+     "n": 3,
+     "median_abs_err_mha": 0.832142,
+     "max_abs_err_mha": 1.217585,
+     "frac_under_1.6mha": 1.0,
+     "pct_under_1.6mha": 100.0,
+     "valid_frac": 1.0,
+     "mean_num_operators": 1.0,
+     "mean_cnot_count": 4.0,
+     "quantum_evals_to_propose": 0,
+     "source": "computed by scripts/build_registry.py: one-shot generation on the VAL split, exact statevector energy (genqai.evaluate.score_circuit)"
+    },
+    "test_fresh": {
+     "n": 14,
+     "median_abs_err_mha": 1.090042,
+     "max_abs_err_mha": 11.258917,
+     "frac_under_1.6mha": 0.571429,
+     "pct_under_1.6mha": 57.142857,
+     "valid_frac": 1.0,
+     "mean_num_operators": 1.0,
+     "mean_cnot_count": 4.0,
+     "source": "results_fresh/h2/nn_reuse_gauge.jsonl",
+     "display_only": true,
+     "interp": {
+      "n": 10,
+      "median_abs_err_mha": 0.515625,
+      "max_abs_err_mha": 3.846619,
+      "pct_under_1.6mha": 80.0
+     },
+     "extrap": {
+      "n": 4,
+      "median_abs_err_mha": 9.638642,
+      "max_abs_err_mha": 11.258917,
+      "pct_under_1.6mha": 0.0
+     }
+    }
+   },
+   "modes": [
+    "oneshot",
+    "refine"
+   ],
+   "limitations": [
+    "fixed problem: H2 sto-3g CAS(2e, 2o) parity mapping, 2 qubits; any other molecule, active space or mapping has no compatible generator (path C)",
+    "validated only inside the TRAIN range (r in [0.5, 2.1] Å) and within the feature-distance threshold",
+    "one-shot fails beyond the training edge (r > 2.1 Å): on the 4 test_fresh extrapolation geometries median |err| 9.64 mHa, max 11.26 mHa, 0% within 1.6 mHa (results_fresh/h2/nn_reuse_gauge.jsonl); use +refine or adapt there",
+    "copies the nearest TRAIN geometry's ADAPT circuit with gauge-mapped angles; no interpolation"
+   ],
+   "config": {
+    "train_labels_sha256": "5661a08ba198579c50212029094620e14bc88fe06b314c43d06921f8fe99ce31"
+   },
+   "numpy_export": null,
+   "numpy_export_sha256": null
+  },
+  {
+   "id": "h2/angle_interp",
+   "kind": "angle_interp",
+   "system": "h2",
+   "checkpoint": null,
+   "checkpoint_sha256": null,
+   "signature": {
+    "formula": "H2",
+    "basis": "sto-3g",
+    "charge": 0,
+    "multiplicity": 1,
+    "active": [
+     2,
+     2
+    ],
+    "mapping": "parity",
+    "num_qubits": 2,
+    "pool_size": 3,
+    "pauli_vocab_sha256": "b3799c0b68ba87c09dad5ef547e27a2619a55bd3811575f73171cfb4574c6d3f",
+    "pauli_vocab_size": 5,
+    "gauge_convention": "orbital-parity-argmax-ref:65a714b1ab0bb6fb"
+   },
+   "family": {
+    "kind": "diatomic",
+    "params": [
+     "r"
+    ],
+    "elements": [
+     "H",
+     "H"
+    ],
+    "train_range": {
+     "r": [
+      0.5,
+      2.1
+     ]
+    },
+    "feature_distance": {
+     "space": "standardised gauge-fixed Pauli coefficients (genqai.features.fit_featurizer, TRAIN mean/std)",
+     "train_loo_nn_max": 1.361548,
+     "train_loo_nn_median": 0.845639,
+     "threshold": 1.361548,
+     "rule": "nearest-TRAIN distance <= 1 x max leave-one-out NN distance of TRAIN"
+    }
+   },
+   "train_dataset": "data/h2/hamiltonians.jsonl (split=train, n=10) + data/h2/teacher_canonical.jsonl (canonical ADAPT labels)",
+   "validation": {
+    "val": {
+     "n": 3,
+     "median_abs_err_mha": 0.003373,
+     "max_abs_err_mha": 0.014199,
+     "frac_under_1.6mha": 1.0,
+     "pct_under_1.6mha": 100.0,
+     "valid_frac": 1.0,
+     "mean_num_operators": 1.0,
+     "mean_cnot_count": 4.0,
+     "quantum_evals_to_propose": 0,
+     "source": "computed by scripts/build_registry.py: one-shot generation on the VAL split, exact statevector energy (genqai.evaluate.score_circuit)"
+    },
+    "test_fresh": {
+     "n": 14,
+     "median_abs_err_mha": 0.019086,
+     "max_abs_err_mha": 8.14994,
+     "frac_under_1.6mha": 0.714286,
+     "pct_under_1.6mha": 71.428571,
+     "valid_frac": 1.0,
+     "mean_num_operators": 1.0,
+     "mean_cnot_count": 4.0,
+     "source": "results_fresh/h2/angle_interp.jsonl",
+     "display_only": true,
+     "interp": {
+      "n": 10,
+      "median_abs_err_mha": 0.002174,
+      "max_abs_err_mha": 0.02921,
+      "pct_under_1.6mha": 100.0
+     },
+     "extrap": {
+      "n": 4,
+      "median_abs_err_mha": 5.497382,
+      "max_abs_err_mha": 8.14994,
+      "pct_under_1.6mha": 0.0
+     }
+    }
+   },
+   "modes": [
+    "oneshot",
+    "refine"
+   ],
+   "limitations": [
+    "fixed problem: H2 sto-3g CAS(2e, 2o) parity mapping, 2 qubits; any other molecule, active space or mapping has no compatible generator (path C)",
+    "validated only inside the TRAIN range (r in [0.5, 2.1] Å) and within the feature-distance threshold",
+    "one-shot fails beyond the training edge (r > 2.1 Å): on the 4 test_fresh extrapolation geometries median |err| 5.50 mHa, max 8.15 mHa, 0% within 1.6 mHa (results_fresh/h2/angle_interp.jsonl); use +refine or adapt there",
+    "1-D only; linear in r, linear extrapolation beyond the end segments"
+   ],
+   "config": {
+    "train_labels_sha256": "9685bd9ec7eff512e94e9a0080ad051efdc1a709f21319a41f32f9df2575cd47",
+    "fit": "genqai.regression.AngleInterpolator"
+   },
+   "numpy_export": null,
+   "numpy_export_sha256": null
+  },
+  {
+   "id": "lih4/transformer_sft",
+   "kind": "transformer_sft",
+   "system": "lih4",
+   "checkpoint": "checkpoints/lih4/sft.pt",
+   "checkpoint_sha256": "87625b2314ee269fda5c228d5cffd5c80e4a4252e1d4a021b46854441c6a3f74",
+   "signature": {
+    "formula": "HLi",
+    "basis": "sto-3g",
+    "charge": 0,
+    "multiplicity": 1,
+    "active": [
+     2,
+     3
+    ],
+    "mapping": "parity",
+    "num_qubits": 4,
+    "pool_size": 8,
+    "pauli_vocab_sha256": "68297716e7e7a95a59de49379ae05ed31424d5bc92e63f2f1687c32762e1aaa7",
+    "pauli_vocab_size": 100,
+    "gauge_convention": "orbital-parity-argmax-ref:8b6d9f0de9eaad04"
+   },
+   "family": {
+    "kind": "diatomic",
+    "params": [
+     "r"
+    ],
+    "elements": [
+     "H",
+     "Li"
+    ],
+    "train_range": {
+     "r": [
+      1.0,
+      3.56
+     ]
+    },
+    "feature_distance": {
+     "space": "standardised gauge-fixed Pauli coefficients (genqai.features.fit_featurizer, TRAIN mean/std)",
+     "train_loo_nn_max": 3.358853,
+     "train_loo_nn_median": 0.670964,
+     "threshold": 3.358853,
+     "rule": "nearest-TRAIN distance <= 1 x max leave-one-out NN distance of TRAIN"
+    }
+   },
+   "train_dataset": "data/lih4/hamiltonians.jsonl (split=train, n=39) + data/lih4/teacher_canonical.jsonl (canonical ADAPT labels)",
+   "validation": {
+    "val": {
+     "n": 9,
+     "median_abs_err_mha": 0.000745,
+     "max_abs_err_mha": 0.005312,
+     "frac_under_1.6mha": 1.0,
+     "pct_under_1.6mha": 100.0,
+     "valid_frac": 1.0,
+     "mean_num_operators": 8.0,
+     "mean_cnot_count": 172.0,
+     "quantum_evals_to_propose": 0,
+     "source": "computed by scripts/build_registry.py: one-shot generation on the VAL split, exact statevector energy (genqai.evaluate.score_circuit)"
+    },
+    "test_fresh": {
+     "n": 14,
+     "median_abs_err_mha": 0.001249,
+     "max_abs_err_mha": 53.655528,
+     "frac_under_1.6mha": 0.714286,
+     "pct_under_1.6mha": 71.428571,
+     "valid_frac": 1.0,
+     "mean_num_operators": 8.0,
+     "mean_cnot_count": 172.0,
+     "source": "results_fresh/lih4/sft_oneshot.jsonl",
+     "display_only": true,
+     "interp": {
+      "n": 10,
+      "median_abs_err_mha": 0.000779,
+      "max_abs_err_mha": 0.002614,
+      "pct_under_1.6mha": 100.0
+     },
+     "extrap": {
+      "n": 4,
+      "median_abs_err_mha": 30.642775,
+      "max_abs_err_mha": 53.655528,
+      "pct_under_1.6mha": 0.0
+     }
+    }
+   },
+   "modes": [
+    "oneshot",
+    "bestofk",
+    "refine"
+   ],
+   "limitations": [
+    "fixed problem: HLi sto-3g CAS(2e, 3o) parity mapping, 4 qubits; any other molecule, active space or mapping has no compatible generator (path C)",
+    "validated only inside the TRAIN range (r in [1, 3.56] Å) and within the feature-distance threshold",
+    "one-shot fails beyond the training edge (r > 3.56 Å): on the 4 test_fresh extrapolation geometries median |err| 30.64 mHa, max 53.66 mHa, 0% within 1.6 mHa (results_fresh/lih4/sft_oneshot.jsonl); use +refine or adapt there",
+    "checkpoint selected on VAL, so VAL metrics are in-sample for model selection",
+    "torch-free inference via the NumPy export (greedy one-shot only; best-of-K needs torch)"
+   ],
+   "config": {},
+   "numpy_export": "qollab/checkpoints/lih4/sft.json",
+   "numpy_export_sha256": "22b54535fea98905945975b85984c8326225b4b9a48c3166f7246327b44a7130"
+  },
+  {
+   "id": "lih4/transformer_grpo",
+   "kind": "transformer_grpo",
+   "system": "lih4",
+   "checkpoint": "checkpoints/lih4/grpo.pt",
+   "checkpoint_sha256": "48f4a589f0e50a08e0a9bfa16cf0c92bd8f8186bbfb655d0fd40ce1b6b7afc42",
+   "signature": {
+    "formula": "HLi",
+    "basis": "sto-3g",
+    "charge": 0,
+    "multiplicity": 1,
+    "active": [
+     2,
+     3
+    ],
+    "mapping": "parity",
+    "num_qubits": 4,
+    "pool_size": 8,
+    "pauli_vocab_sha256": "68297716e7e7a95a59de49379ae05ed31424d5bc92e63f2f1687c32762e1aaa7",
+    "pauli_vocab_size": 100,
+    "gauge_convention": "orbital-parity-argmax-ref:8b6d9f0de9eaad04"
+   },
+   "family": {
+    "kind": "diatomic",
+    "params": [
+     "r"
+    ],
+    "elements": [
+     "H",
+     "Li"
+    ],
+    "train_range": {
+     "r": [
+      1.0,
+      3.56
+     ]
+    },
+    "feature_distance": {
+     "space": "standardised gauge-fixed Pauli coefficients (genqai.features.fit_featurizer, TRAIN mean/std)",
+     "train_loo_nn_max": 3.358853,
+     "train_loo_nn_median": 0.670964,
+     "threshold": 3.358853,
+     "rule": "nearest-TRAIN distance <= 1 x max leave-one-out NN distance of TRAIN"
+    }
+   },
+   "train_dataset": "data/lih4/hamiltonians.jsonl (split=train, n=39): GRPO on exact energies, initialised from checkpoints/lih4/sft.pt",
+   "validation": {
+    "val": {
+     "n": 9,
+     "median_abs_err_mha": 7.9e-05,
+     "max_abs_err_mha": 0.003335,
+     "frac_under_1.6mha": 1.0,
+     "pct_under_1.6mha": 100.0,
+     "valid_frac": 1.0,
+     "mean_num_operators": 8.0,
+     "mean_cnot_count": 172.0,
+     "quantum_evals_to_propose": 0,
+     "source": "computed by scripts/build_registry.py: one-shot generation on the VAL split, exact statevector energy (genqai.evaluate.score_circuit)"
+    },
+    "test_fresh": {
+     "n": 14,
+     "median_abs_err_mha": 0.000114,
+     "max_abs_err_mha": 58.551409,
+     "frac_under_1.6mha": 0.714286,
+     "pct_under_1.6mha": 71.428571,
+     "valid_frac": 1.0,
+     "mean_num_operators": 8.0,
+     "mean_cnot_count": 172.0,
+     "source": "results_fresh/lih4/grpo_oneshot.jsonl",
+     "display_only": true,
+     "interp": {
+      "n": 10,
+      "median_abs_err_mha": 8.7e-05,
+      "max_abs_err_mha": 0.000229,
+      "pct_under_1.6mha": 100.0
+     },
+     "extrap": {
+      "n": 4,
+      "median_abs_err_mha": 34.076576,
+      "max_abs_err_mha": 58.551409,
+      "pct_under_1.6mha": 0.0
+     }
+    }
+   },
+   "modes": [
+    "oneshot",
+    "bestofk",
+    "refine"
+   ],
+   "limitations": [
+    "fixed problem: HLi sto-3g CAS(2e, 3o) parity mapping, 4 qubits; any other molecule, active space or mapping has no compatible generator (path C)",
+    "validated only inside the TRAIN range (r in [1, 3.56] Å) and within the feature-distance threshold",
+    "one-shot fails beyond the training edge (r > 3.56 Å): on the 4 test_fresh extrapolation geometries median |err| 34.08 mHa, max 58.55 mHa, 0% within 1.6 mHa (results_fresh/lih4/grpo_oneshot.jsonl); use +refine or adapt there",
+    "checkpoint selected on VAL, so VAL metrics are in-sample for model selection",
+    "needs torch; energy-reward GRPO did not improve held-out error over SFT (README finding 3)"
+   ],
+   "config": {},
+   "numpy_export": null,
+   "numpy_export_sha256": null
+  },
+  {
+   "id": "lih4/krr",
+   "kind": "krr",
+   "system": "lih4",
+   "checkpoint": null,
+   "checkpoint_sha256": null,
+   "signature": {
+    "formula": "HLi",
+    "basis": "sto-3g",
+    "charge": 0,
+    "multiplicity": 1,
+    "active": [
+     2,
+     3
+    ],
+    "mapping": "parity",
+    "num_qubits": 4,
+    "pool_size": 8,
+    "pauli_vocab_sha256": "68297716e7e7a95a59de49379ae05ed31424d5bc92e63f2f1687c32762e1aaa7",
+    "pauli_vocab_size": 100,
+    "gauge_convention": "orbital-parity-argmax-ref:8b6d9f0de9eaad04"
+   },
+   "family": {
+    "kind": "diatomic",
+    "params": [
+     "r"
+    ],
+    "elements": [
+     "H",
+     "Li"
+    ],
+    "train_range": {
+     "r": [
+      1.0,
+      3.56
+     ]
+    },
+    "feature_distance": {
+     "space": "standardised gauge-fixed Pauli coefficients (genqai.features.fit_featurizer, TRAIN mean/std)",
+     "train_loo_nn_max": 3.358853,
+     "train_loo_nn_median": 0.670964,
+     "threshold": 3.358853,
+     "rule": "nearest-TRAIN distance <= 1 x max leave-one-out NN distance of TRAIN"
+    }
+   },
+   "train_dataset": "data/lih4/hamiltonians.jsonl (split=train, n=39) + data/lih4/teacher_canonical.jsonl (canonical ADAPT labels)",
+   "validation": {
+    "val": {
+     "n": 9,
+     "median_abs_err_mha": 0.0,
+     "max_abs_err_mha": 6.5e-05,
+     "frac_under_1.6mha": 1.0,
+     "pct_under_1.6mha": 100.0,
+     "valid_frac": 1.0,
+     "mean_num_operators": 8.0,
+     "mean_cnot_count": 172.0,
+     "quantum_evals_to_propose": 0,
+     "source": "computed by scripts/build_registry.py: one-shot generation on the VAL split, exact statevector energy (genqai.evaluate.score_circuit)"
+    },
+    "test_fresh": {
+     "n": 14,
+     "median_abs_err_mha": 0.0,
+     "max_abs_err_mha": 150.161392,
+     "frac_under_1.6mha": 0.714286,
+     "pct_under_1.6mha": 71.428571,
+     "valid_frac": 1.0,
+     "mean_num_operators": 8.0,
+     "mean_cnot_count": 172.0,
+     "source": "results_fresh/lih4/angle_regression.jsonl",
+     "display_only": true,
+     "interp": {
+      "n": 10,
+      "median_abs_err_mha": 0.0,
+      "max_abs_err_mha": 6e-06,
+      "pct_under_1.6mha": 100.0
+     },
+     "extrap": {
+      "n": 4,
+      "median_abs_err_mha": 98.078002,
+      "max_abs_err_mha": 150.161392,
+      "pct_under_1.6mha": 0.0
+     }
+    }
+   },
+   "modes": [
+    "oneshot",
+    "refine"
+   ],
+   "limitations": [
+    "fixed problem: HLi sto-3g CAS(2e, 3o) parity mapping, 4 qubits; any other molecule, active space or mapping has no compatible generator (path C)",
+    "validated only inside the TRAIN range (r in [1, 3.56] Å) and within the feature-distance threshold",
+    "one-shot fails beyond the training edge (r > 3.56 Å): on the 4 test_fresh extrapolation geometries median |err| 98.08 mHa, max 150.16 mHa, 0% within 1.6 mHa (results_fresh/lih4/angle_regression.jsonl); use +refine or adapt there",
+    "needs scikit-learn; alpha/gamma/sequence rule chosen on VAL energies, so VAL metrics are in-sample for that choice"
+   ],
+   "config": {
+    "alpha": 0.0,
+    "gamma": 0.1,
+    "seq_rule": "majority",
+    "train_labels_sha256": "4ce26b0e86ac16c141459edb7f96361001929bbddb03000d1c635eea4119a664",
+    "fit": "genqai.regression.AngleRegressor"
+   },
+   "numpy_export": null,
+   "numpy_export_sha256": null
+  },
+  {
+   "id": "lih4/nn_reuse_gauge",
+   "kind": "nn_reuse_gauge",
+   "system": "lih4",
+   "checkpoint": null,
+   "checkpoint_sha256": null,
+   "signature": {
+    "formula": "HLi",
+    "basis": "sto-3g",
+    "charge": 0,
+    "multiplicity": 1,
+    "active": [
+     2,
+     3
+    ],
+    "mapping": "parity",
+    "num_qubits": 4,
+    "pool_size": 8,
+    "pauli_vocab_sha256": "68297716e7e7a95a59de49379ae05ed31424d5bc92e63f2f1687c32762e1aaa7",
+    "pauli_vocab_size": 100,
+    "gauge_convention": "orbital-parity-argmax-ref:8b6d9f0de9eaad04"
+   },
+   "family": {
+    "kind": "diatomic",
+    "params": [
+     "r"
+    ],
+    "elements": [
+     "H",
+     "Li"
+    ],
+    "train_range": {
+     "r": [
+      1.0,
+      3.56
+     ]
+    },
+    "feature_distance": {
+     "space": "standardised gauge-fixed Pauli coefficients (genqai.features.fit_featurizer, TRAIN mean/std)",
+     "train_loo_nn_max": 3.358853,
+     "train_loo_nn_median": 0.670964,
+     "threshold": 3.358853,
+     "rule": "nearest-TRAIN distance <= 1 x max leave-one-out NN distance of TRAIN"
+    }
+   },
+   "train_dataset": "data/lih4/hamiltonians.jsonl (split=train, n=39) + data/lih4/teacher.jsonl (raw ADAPT circuits)",
+   "validation": {
+    "val": {
+     "n": 9,
+     "median_abs_err_mha": 0.045619,
+     "max_abs_err_mha": 0.096637,
+     "frac_under_1.6mha": 1.0,
+     "pct_under_1.6mha": 100.0,
+     "valid_frac": 1.0,
+     "mean_num_operators": 8.0,
+     "mean_cnot_count": 172.0,
+     "quantum_evals_to_propose": 0,
+     "source": "computed by scripts/build_registry.py: one-shot generation on the VAL split, exact statevector energy (genqai.evaluate.score_circuit)"
+    },
+    "test_fresh": {
+     "n": 14,
+     "median_abs_err_mha": 0.026533,
+     "max_abs_err_mha": 33.911211,
+     "frac_under_1.6mha": 0.714286,
+     "pct_under_1.6mha": 71.428571,
+     "valid_frac": 1.0,
+     "mean_num_operators": 8.0,
+     "mean_cnot_count": 172.0,
+     "source": "results_fresh/lih4/nn_reuse_gauge.jsonl",
+     "display_only": true,
+     "interp": {
+      "n": 10,
+      "median_abs_err_mha": 0.015619,
+      "max_abs_err_mha": 0.14695,
+      "pct_under_1.6mha": 100.0
+     },
+     "extrap": {
+      "n": 4,
+      "median_abs_err_mha": 22.996732,
+      "max_abs_err_mha": 33.911211,
+      "pct_under_1.6mha": 0.0
+     }
+    }
+   },
+   "modes": [
+    "oneshot",
+    "refine"
+   ],
+   "limitations": [
+    "fixed problem: HLi sto-3g CAS(2e, 3o) parity mapping, 4 qubits; any other molecule, active space or mapping has no compatible generator (path C)",
+    "validated only inside the TRAIN range (r in [1, 3.56] Å) and within the feature-distance threshold",
+    "one-shot fails beyond the training edge (r > 3.56 Å): on the 4 test_fresh extrapolation geometries median |err| 23.00 mHa, max 33.91 mHa, 0% within 1.6 mHa (results_fresh/lih4/nn_reuse_gauge.jsonl); use +refine or adapt there",
+    "copies the nearest TRAIN geometry's ADAPT circuit with gauge-mapped angles; no interpolation"
+   ],
+   "config": {
+    "train_labels_sha256": "7e33a90f5a6335d2f2cc3a44aff0ff51329cb812efd77e9a7fb979737909fdfa"
+   },
+   "numpy_export": null,
+   "numpy_export_sha256": null
+  },
+  {
+   "id": "lih4/angle_interp",
+   "kind": "angle_interp",
+   "system": "lih4",
+   "checkpoint": null,
+   "checkpoint_sha256": null,
+   "signature": {
+    "formula": "HLi",
+    "basis": "sto-3g",
+    "charge": 0,
+    "multiplicity": 1,
+    "active": [
+     2,
+     3
+    ],
+    "mapping": "parity",
+    "num_qubits": 4,
+    "pool_size": 8,
+    "pauli_vocab_sha256": "68297716e7e7a95a59de49379ae05ed31424d5bc92e63f2f1687c32762e1aaa7",
+    "pauli_vocab_size": 100,
+    "gauge_convention": "orbital-parity-argmax-ref:8b6d9f0de9eaad04"
+   },
+   "family": {
+    "kind": "diatomic",
+    "params": [
+     "r"
+    ],
+    "elements": [
+     "H",
+     "Li"
+    ],
+    "train_range": {
+     "r": [
+      1.0,
+      3.56
+     ]
+    },
+    "feature_distance": {
+     "space": "standardised gauge-fixed Pauli coefficients (genqai.features.fit_featurizer, TRAIN mean/std)",
+     "train_loo_nn_max": 3.358853,
+     "train_loo_nn_median": 0.670964,
+     "threshold": 3.358853,
+     "rule": "nearest-TRAIN distance <= 1 x max leave-one-out NN distance of TRAIN"
+    }
+   },
+   "train_dataset": "data/lih4/hamiltonians.jsonl (split=train, n=39) + data/lih4/teacher_canonical.jsonl (canonical ADAPT labels)",
+   "validation": {
+    "val": {
+     "n": 9,
+     "median_abs_err_mha": 4.9e-05,
+     "max_abs_err_mha": 0.00046,
+     "frac_under_1.6mha": 1.0,
+     "pct_under_1.6mha": 100.0,
+     "valid_frac": 1.0,
+     "mean_num_operators": 8.0,
+     "mean_cnot_count": 172.0,
+     "quantum_evals_to_propose": 0,
+     "source": "computed by scripts/build_registry.py: one-shot generation on the VAL split, exact statevector energy (genqai.evaluate.score_circuit)"
+    },
+    "test_fresh": {
+     "n": 14,
+     "median_abs_err_mha": 8.9e-05,
+     "max_abs_err_mha": 12.660789,
+     "frac_under_1.6mha": 0.714286,
+     "pct_under_1.6mha": 71.428571,
+     "valid_frac": 1.0,
+     "mean_num_operators": 8.0,
+     "mean_cnot_count": 172.0,
+     "source": "results_fresh/lih4/angle_interp.jsonl",
+     "display_only": true,
+     "interp": {
+      "n": 10,
+      "median_abs_err_mha": 5.6e-05,
+      "max_abs_err_mha": 0.012214,
+      "pct_under_1.6mha": 100.0
+     },
+     "extrap": {
+      "n": 4,
+      "median_abs_err_mha": 4.926113,
+      "max_abs_err_mha": 12.660789,
+      "pct_under_1.6mha": 0.0
+     }
+    }
+   },
+   "modes": [
+    "oneshot",
+    "refine"
+   ],
+   "limitations": [
+    "fixed problem: HLi sto-3g CAS(2e, 3o) parity mapping, 4 qubits; any other molecule, active space or mapping has no compatible generator (path C)",
+    "validated only inside the TRAIN range (r in [1, 3.56] Å) and within the feature-distance threshold",
+    "one-shot fails beyond the training edge (r > 3.56 Å): on the 4 test_fresh extrapolation geometries median |err| 4.93 mHa, max 12.66 mHa, 0% within 1.6 mHa (results_fresh/lih4/angle_interp.jsonl); use +refine or adapt there",
+    "1-D only; linear in r, linear extrapolation beyond the end segments"
+   ],
+   "config": {
+    "train_labels_sha256": "4ce26b0e86ac16c141459edb7f96361001929bbddb03000d1c635eea4119a664",
+    "fit": "genqai.regression.AngleInterpolator"
+   },
+   "numpy_export": null,
+   "numpy_export_sha256": null
+  },
+  {
+   "id": "lih6/transformer_sft",
+   "kind": "transformer_sft",
+   "system": "lih6",
+   "checkpoint": "checkpoints/lih6/sft.pt",
+   "checkpoint_sha256": "5ec628ffb611070f4b7ac20e274c8cb40a3af9ab762cee4c0a727c38ec5ee6fa",
+   "signature": {
+    "formula": "HLi",
+    "basis": "sto-3g",
+    "charge": 0,
+    "multiplicity": 1,
+    "active": [
+     2,
+     4
+    ],
+    "mapping": "parity",
+    "num_qubits": 6,
+    "pool_size": 15,
+    "pauli_vocab_sha256": "00fb3ff54612bbe6a4079879fc2d9010bd61da3a98c919f2b09d2948238e51b3",
+    "pauli_vocab_size": 175,
+    "gauge_convention": "orbital-parity-argmax-ref:453703f95870174c"
+   },
+   "family": {
+    "kind": "diatomic",
+    "params": [
+     "r"
+    ],
+    "elements": [
+     "H",
+     "Li"
+    ],
+    "train_range": {
+     "r": [
+      1.0,
+      3.5333
+     ]
+    },
+    "feature_distance": {
+     "space": "standardised gauge-fixed Pauli coefficients (genqai.features.fit_featurizer, TRAIN mean/std)",
+     "train_loo_nn_max": 4.579117,
+     "train_loo_nn_median": 1.903375,
+     "threshold": 4.579117,
+     "rule": "nearest-TRAIN distance <= 1 x max leave-one-out NN distance of TRAIN"
+    }
+   },
+   "train_dataset": "data/lih6/hamiltonians.jsonl (split=train, n=24) + data/lih6/teacher_canonical.jsonl (canonical ADAPT labels)",
+   "validation": {
+    "val": {
+     "n": 5,
+     "median_abs_err_mha": 0.001029,
+     "max_abs_err_mha": 0.003831,
+     "frac_under_1.6mha": 1.0,
+     "pct_under_1.6mha": 100.0,
+     "valid_frac": 1.0,
+     "mean_num_operators": 9.0,
+     "mean_cnot_count": 298.0,
+     "quantum_evals_to_propose": 0,
+     "source": "computed by scripts/build_registry.py: one-shot generation on the VAL split, exact statevector energy (genqai.evaluate.score_circuit)"
+    },
+    "test_fresh": {
+     "n": 14,
+     "median_abs_err_mha": 0.002331,
+     "max_abs_err_mha": 26.548104,
+     "frac_under_1.6mha": 0.714286,
+     "pct_under_1.6mha": 71.428571,
+     "valid_frac": 1.0,
+     "mean_num_operators": 9.0,
+     "mean_cnot_count": 298.0,
+     "source": "results_fresh/lih6/sft_oneshot.jsonl",
+     "display_only": true,
+     "interp": {
+      "n": 10,
+      "median_abs_err_mha": 0.001047,
+      "max_abs_err_mha": 0.005368,
+      "pct_under_1.6mha": 100.0
+     },
+     "extrap": {
+      "n": 4,
+      "median_abs_err_mha": 19.503715,
+      "max_abs_err_mha": 26.548104,
+      "pct_under_1.6mha": 0.0
+     }
+    }
+   },
+   "modes": [
+    "oneshot",
+    "bestofk",
+    "refine"
+   ],
+   "limitations": [
+    "fixed problem: HLi sto-3g CAS(2e, 4o) parity mapping, 6 qubits; any other molecule, active space or mapping has no compatible generator (path C)",
+    "validated only inside the TRAIN range (r in [1, 3.5333] Å) and within the feature-distance threshold",
+    "one-shot fails beyond the training edge (r > 3.5333 Å): on the 4 test_fresh extrapolation geometries median |err| 19.50 mHa, max 26.55 mHa, 0% within 1.6 mHa (results_fresh/lih6/sft_oneshot.jsonl); use +refine or adapt there",
+    "checkpoint selected on VAL, so VAL metrics are in-sample for model selection",
+    "torch-free inference via the NumPy export (greedy one-shot only; best-of-K needs torch)"
+   ],
+   "config": {},
+   "numpy_export": "qollab/checkpoints/lih6/sft.json",
+   "numpy_export_sha256": "197a990f931debf504731e11457b586a256d9baff3bdda640473c4d9e008c7af"
+  },
+  {
+   "id": "lih6/transformer_grpo",
+   "kind": "transformer_grpo",
+   "system": "lih6",
+   "checkpoint": "checkpoints/lih6/grpo.pt",
+   "checkpoint_sha256": "967e755581df6c297b3b8288d475a2cbe640ad0e28c0774bbd02244405634c9e",
+   "signature": {
+    "formula": "HLi",
+    "basis": "sto-3g",
+    "charge": 0,
+    "multiplicity": 1,
+    "active": [
+     2,
+     4
+    ],
+    "mapping": "parity",
+    "num_qubits": 6,
+    "pool_size": 15,
+    "pauli_vocab_sha256": "00fb3ff54612bbe6a4079879fc2d9010bd61da3a98c919f2b09d2948238e51b3",
+    "pauli_vocab_size": 175,
+    "gauge_convention": "orbital-parity-argmax-ref:453703f95870174c"
+   },
+   "family": {
+    "kind": "diatomic",
+    "params": [
+     "r"
+    ],
+    "elements": [
+     "H",
+     "Li"
+    ],
+    "train_range": {
+     "r": [
+      1.0,
+      3.5333
+     ]
+    },
+    "feature_distance": {
+     "space": "standardised gauge-fixed Pauli coefficients (genqai.features.fit_featurizer, TRAIN mean/std)",
+     "train_loo_nn_max": 4.579117,
+     "train_loo_nn_median": 1.903375,
+     "threshold": 4.579117,
+     "rule": "nearest-TRAIN distance <= 1 x max leave-one-out NN distance of TRAIN"
+    }
+   },
+   "train_dataset": "data/lih6/hamiltonians.jsonl (split=train, n=24): GRPO on exact energies, initialised from checkpoints/lih6/sft.pt",
+   "validation": {
+    "val": {
+     "n": 5,
+     "median_abs_err_mha": 0.000186,
+     "max_abs_err_mha": 0.000901,
+     "frac_under_1.6mha": 1.0,
+     "pct_under_1.6mha": 100.0,
+     "valid_frac": 1.0,
+     "mean_num_operators": 9.0,
+     "mean_cnot_count": 298.0,
+     "quantum_evals_to_propose": 0,
+     "source": "computed by scripts/build_registry.py: one-shot generation on the VAL split, exact statevector energy (genqai.evaluate.score_circuit)"
+    },
+    "test_fresh": {
+     "n": 14,
+     "median_abs_err_mha": 0.000726,
+     "max_abs_err_mha": 28.409329,
+     "frac_under_1.6mha": 0.714286,
+     "pct_under_1.6mha": 71.428571,
+     "valid_frac": 1.0,
+     "mean_num_operators": 9.0,
+     "mean_cnot_count": 298.0,
+     "source": "results_fresh/lih6/grpo_oneshot.jsonl",
+     "display_only": true,
+     "interp": {
+      "n": 10,
+      "median_abs_err_mha": 0.000356,
+      "max_abs_err_mha": 0.008286,
+      "pct_under_1.6mha": 100.0
+     },
+     "extrap": {
+      "n": 4,
+      "median_abs_err_mha": 21.120762,
+      "max_abs_err_mha": 28.409329,
+      "pct_under_1.6mha": 0.0
+     }
+    }
+   },
+   "modes": [
+    "oneshot",
+    "bestofk",
+    "refine"
+   ],
+   "limitations": [
+    "fixed problem: HLi sto-3g CAS(2e, 4o) parity mapping, 6 qubits; any other molecule, active space or mapping has no compatible generator (path C)",
+    "validated only inside the TRAIN range (r in [1, 3.5333] Å) and within the feature-distance threshold",
+    "one-shot fails beyond the training edge (r > 3.5333 Å): on the 4 test_fresh extrapolation geometries median |err| 21.12 mHa, max 28.41 mHa, 0% within 1.6 mHa (results_fresh/lih6/grpo_oneshot.jsonl); use +refine or adapt there",
+    "checkpoint selected on VAL, so VAL metrics are in-sample for model selection",
+    "needs torch; energy-reward GRPO did not improve held-out error over SFT (README finding 3)"
+   ],
+   "config": {},
+   "numpy_export": null,
+   "numpy_export_sha256": null
+  },
+  {
+   "id": "lih6/transformer_budget",
+   "kind": "transformer_budget",
+   "system": "lih6",
+   "checkpoint": "checkpoints/lih6/budget.pt",
+   "checkpoint_sha256": "78f4480b820fc298383ad521e9cf885cad677787b1a95d99ae8d2398a4bdbeb0",
+   "signature": {
+    "formula": "HLi",
+    "basis": "sto-3g",
+    "charge": 0,
+    "multiplicity": 1,
+    "active": [
+     2,
+     4
+    ],
+    "mapping": "parity",
+    "num_qubits": 6,
+    "pool_size": 15,
+    "pauli_vocab_sha256": "00fb3ff54612bbe6a4079879fc2d9010bd61da3a98c919f2b09d2948238e51b3",
+    "pauli_vocab_size": 175,
+    "gauge_convention": "orbital-parity-argmax-ref:453703f95870174c"
+   },
+   "family": {
+    "kind": "diatomic",
+    "params": [
+     "r"
+    ],
+    "elements": [
+     "H",
+     "Li"
+    ],
+    "train_range": {
+     "r": [
+      1.0,
+      3.5333
+     ]
+    },
+    "feature_distance": {
+     "space": "standardised gauge-fixed Pauli coefficients (genqai.features.fit_featurizer, TRAIN mean/std)",
+     "train_loo_nn_max": 4.579117,
+     "train_loo_nn_median": 1.903375,
+     "threshold": 4.579117,
+     "rule": "nearest-TRAIN distance <= 1 x max leave-one-out NN distance of TRAIN"
+    }
+   },
+   "train_dataset": "data/lih6/hamiltonians.jsonl (split=train, n=24): budget-conditioned GRPO, initialised from checkpoints/lih6/budget_sft.pt",
+   "validation": {
+    "val": {
+     "n": 5,
+     "median_abs_err_mha": 0.528956,
+     "max_abs_err_mha": 0.706278,
+     "frac_under_1.6mha": 1.0,
+     "pct_under_1.6mha": 100.0,
+     "valid_frac": 1.0,
+     "mean_num_operators": 6.6,
+     "mean_cnot_count": 226.0,
+     "quantum_evals_to_propose": 0,
+     "source": "computed by scripts/build_registry.py: one-shot generation on the VAL split, exact statevector energy (genqai.evaluate.score_circuit)"
+    },
+    "test_fresh": {
+     "n": 14,
+     "median_abs_err_mha": 0.790137,
+     "max_abs_err_mha": 18.474177,
+     "frac_under_1.6mha": 0.642857,
+     "pct_under_1.6mha": 64.285714,
+     "valid_frac": 1.0,
+     "mean_num_operators": 7.285714,
+     "mean_cnot_count": 246.571429,
+     "source": "results_fresh/lih6/budget_oneshot.jsonl",
+     "display_only": true,
+     "interp": {
+      "n": 10,
+      "median_abs_err_mha": 0.572622,
+      "max_abs_err_mha": 4.763651,
+      "pct_under_1.6mha": 90.0
+     },
+     "extrap": {
+      "n": 4,
+      "median_abs_err_mha": 14.923894,
+      "max_abs_err_mha": 18.474177,
+      "pct_under_1.6mha": 0.0
+     }
+    }
+   },
+   "modes": [
+    "oneshot",
+    "bestofk",
+    "refine"
+   ],
+   "limitations": [
+    "fixed problem: HLi sto-3g CAS(2e, 4o) parity mapping, 6 qubits; any other molecule, active space or mapping has no compatible generator (path C)",
+    "validated only inside the TRAIN range (r in [1, 3.5333] Å) and within the feature-distance threshold",
+    "one-shot fails beyond the training edge (r > 3.5333 Å): on the 4 test_fresh extrapolation geometries median |err| 14.92 mHa, max 18.47 mHa, 0% within 1.6 mHa (results_fresh/lih6/budget_oneshot.jsonl); use +refine or adapt there",
+    "checkpoint selected on VAL, so VAL metrics are in-sample for model selection",
+    "needs torch; default CX budget 268 is the VAL-chosen operating point (results/<system>/budget_oneshot.jsonl); other budgets via cnot_budget"
+   ],
+   "config": {
+    "default_cnot_budget": 268
+   },
+   "numpy_export": null,
+   "numpy_export_sha256": null
+  },
+  {
+   "id": "lih6/krr",
+   "kind": "krr",
+   "system": "lih6",
+   "checkpoint": null,
+   "checkpoint_sha256": null,
+   "signature": {
+    "formula": "HLi",
+    "basis": "sto-3g",
+    "charge": 0,
+    "multiplicity": 1,
+    "active": [
+     2,
+     4
+    ],
+    "mapping": "parity",
+    "num_qubits": 6,
+    "pool_size": 15,
+    "pauli_vocab_sha256": "00fb3ff54612bbe6a4079879fc2d9010bd61da3a98c919f2b09d2948238e51b3",
+    "pauli_vocab_size": 175,
+    "gauge_convention": "orbital-parity-argmax-ref:453703f95870174c"
+   },
+   "family": {
+    "kind": "diatomic",
+    "params": [
+     "r"
+    ],
+    "elements": [
+     "H",
+     "Li"
+    ],
+    "train_range": {
+     "r": [
+      1.0,
+      3.5333
+     ]
+    },
+    "feature_distance": {
+     "space": "standardised gauge-fixed Pauli coefficients (genqai.features.fit_featurizer, TRAIN mean/std)",
+     "train_loo_nn_max": 4.579117,
+     "train_loo_nn_median": 1.903375,
+     "threshold": 4.579117,
+     "rule": "nearest-TRAIN distance <= 1 x max leave-one-out NN distance of TRAIN"
+    }
+   },
+   "train_dataset": "data/lih6/hamiltonians.jsonl (split=train, n=24) + data/lih6/teacher_canonical.jsonl (canonical ADAPT labels)",
+   "validation": {
+    "val": {
+     "n": 5,
+     "median_abs_err_mha": 1e-06,
+     "max_abs_err_mha": 6e-06,
+     "frac_under_1.6mha": 1.0,
+     "pct_under_1.6mha": 100.0,
+     "valid_frac": 1.0,
+     "mean_num_operators": 9.0,
+     "mean_cnot_count": 298.0,
+     "quantum_evals_to_propose": 0,
+     "source": "computed by scripts/build_registry.py: one-shot generation on the VAL split, exact statevector energy (genqai.evaluate.score_circuit)"
+    },
+    "test_fresh": {
+     "n": 14,
+     "median_abs_err_mha": 5e-06,
+     "max_abs_err_mha": 15.567191,
+     "frac_under_1.6mha": 0.714286,
+     "pct_under_1.6mha": 71.428571,
+     "valid_frac": 1.0,
+     "mean_num_operators": 9.0,
+     "mean_cnot_count": 298.0,
+     "source": "results_fresh/lih6/angle_regression.jsonl",
+     "display_only": true,
+     "interp": {
+      "n": 10,
+      "median_abs_err_mha": 2e-06,
+      "max_abs_err_mha": 0.000725,
+      "pct_under_1.6mha": 100.0
+     },
+     "extrap": {
+      "n": 4,
+      "median_abs_err_mha": 10.588867,
+      "max_abs_err_mha": 15.567191,
+      "pct_under_1.6mha": 0.0
+     }
+    }
+   },
+   "modes": [
+    "oneshot",
+    "refine"
+   ],
+   "limitations": [
+    "fixed problem: HLi sto-3g CAS(2e, 4o) parity mapping, 6 qubits; any other molecule, active space or mapping has no compatible generator (path C)",
+    "validated only inside the TRAIN range (r in [1, 3.5333] Å) and within the feature-distance threshold",
+    "one-shot fails beyond the training edge (r > 3.5333 Å): on the 4 test_fresh extrapolation geometries median |err| 10.59 mHa, max 15.57 mHa, 0% within 1.6 mHa (results_fresh/lih6/angle_regression.jsonl); use +refine or adapt there",
+    "needs scikit-learn; alpha/gamma/sequence rule chosen on VAL energies, so VAL metrics are in-sample for that choice"
+   ],
+   "config": {
+    "alpha": 0.0,
+    "gamma": 0.031623,
+    "seq_rule": "majority",
+    "train_labels_sha256": "4fc22a9cbaacc5fef4ff7c0d64dafc66a8aebc5e360586df15bd414f73fc1b27",
+    "fit": "genqai.regression.AngleRegressor"
+   },
+   "numpy_export": null,
+   "numpy_export_sha256": null
+  },
+  {
+   "id": "lih6/nn_reuse_gauge",
+   "kind": "nn_reuse_gauge",
+   "system": "lih6",
+   "checkpoint": null,
+   "checkpoint_sha256": null,
+   "signature": {
+    "formula": "HLi",
+    "basis": "sto-3g",
+    "charge": 0,
+    "multiplicity": 1,
+    "active": [
+     2,
+     4
+    ],
+    "mapping": "parity",
+    "num_qubits": 6,
+    "pool_size": 15,
+    "pauli_vocab_sha256": "00fb3ff54612bbe6a4079879fc2d9010bd61da3a98c919f2b09d2948238e51b3",
+    "pauli_vocab_size": 175,
+    "gauge_convention": "orbital-parity-argmax-ref:453703f95870174c"
+   },
+   "family": {
+    "kind": "diatomic",
+    "params": [
+     "r"
+    ],
+    "elements": [
+     "H",
+     "Li"
+    ],
+    "train_range": {
+     "r": [
+      1.0,
+      3.5333
+     ]
+    },
+    "feature_distance": {
+     "space": "standardised gauge-fixed Pauli coefficients (genqai.features.fit_featurizer, TRAIN mean/std)",
+     "train_loo_nn_max": 4.579117,
+     "train_loo_nn_median": 1.903375,
+     "threshold": 4.579117,
+     "rule": "nearest-TRAIN distance <= 1 x max leave-one-out NN distance of TRAIN"
+    }
+   },
+   "train_dataset": "data/lih6/hamiltonians.jsonl (split=train, n=24) + data/lih6/teacher.jsonl (raw ADAPT circuits)",
+   "validation": {
+    "val": {
+     "n": 5,
+     "median_abs_err_mha": 0.119416,
+     "max_abs_err_mha": 0.260515,
+     "frac_under_1.6mha": 1.0,
+     "pct_under_1.6mha": 100.0,
+     "valid_frac": 1.0,
+     "mean_num_operators": 9.0,
+     "mean_cnot_count": 298.0,
+     "quantum_evals_to_propose": 0,
+     "source": "computed by scripts/build_registry.py: one-shot generation on the VAL split, exact statevector energy (genqai.evaluate.score_circuit)"
+    },
+    "test_fresh": {
+     "n": 14,
+     "median_abs_err_mha": 0.114378,
+     "max_abs_err_mha": 25.897082,
+     "frac_under_1.6mha": 0.714286,
+     "pct_under_1.6mha": 71.428571,
+     "valid_frac": 1.0,
+     "mean_num_operators": 9.0,
+     "mean_cnot_count": 297.285714,
+     "source": "results_fresh/lih6/nn_reuse_gauge.jsonl",
+     "display_only": true,
+     "interp": {
+      "n": 10,
+      "median_abs_err_mha": 0.019102,
+      "max_abs_err_mha": 0.18587,
+      "pct_under_1.6mha": 100.0
+     },
+     "extrap": {
+      "n": 4,
+      "median_abs_err_mha": 21.889814,
+      "max_abs_err_mha": 25.897082,
+      "pct_under_1.6mha": 0.0
+     }
+    }
+   },
+   "modes": [
+    "oneshot",
+    "refine"
+   ],
+   "limitations": [
+    "fixed problem: HLi sto-3g CAS(2e, 4o) parity mapping, 6 qubits; any other molecule, active space or mapping has no compatible generator (path C)",
+    "validated only inside the TRAIN range (r in [1, 3.5333] Å) and within the feature-distance threshold",
+    "one-shot fails beyond the training edge (r > 3.5333 Å): on the 4 test_fresh extrapolation geometries median |err| 21.89 mHa, max 25.90 mHa, 0% within 1.6 mHa (results_fresh/lih6/nn_reuse_gauge.jsonl); use +refine or adapt there",
+    "copies the nearest TRAIN geometry's ADAPT circuit with gauge-mapped angles; no interpolation"
+   ],
+   "config": {
+    "train_labels_sha256": "89993298546935bed9d7a39b4367313a91ed1d6b74ee5c1dfeb1d695d2c1795b"
+   },
+   "numpy_export": null,
+   "numpy_export_sha256": null
+  },
+  {
+   "id": "lih6/angle_interp",
+   "kind": "angle_interp",
+   "system": "lih6",
+   "checkpoint": null,
+   "checkpoint_sha256": null,
+   "signature": {
+    "formula": "HLi",
+    "basis": "sto-3g",
+    "charge": 0,
+    "multiplicity": 1,
+    "active": [
+     2,
+     4
+    ],
+    "mapping": "parity",
+    "num_qubits": 6,
+    "pool_size": 15,
+    "pauli_vocab_sha256": "00fb3ff54612bbe6a4079879fc2d9010bd61da3a98c919f2b09d2948238e51b3",
+    "pauli_vocab_size": 175,
+    "gauge_convention": "orbital-parity-argmax-ref:453703f95870174c"
+   },
+   "family": {
+    "kind": "diatomic",
+    "params": [
+     "r"
+    ],
+    "elements": [
+     "H",
+     "Li"
+    ],
+    "train_range": {
+     "r": [
+      1.0,
+      3.5333
+     ]
+    },
+    "feature_distance": {
+     "space": "standardised gauge-fixed Pauli coefficients (genqai.features.fit_featurizer, TRAIN mean/std)",
+     "train_loo_nn_max": 4.579117,
+     "train_loo_nn_median": 1.903375,
+     "threshold": 4.579117,
+     "rule": "nearest-TRAIN distance <= 1 x max leave-one-out NN distance of TRAIN"
+    }
+   },
+   "train_dataset": "data/lih6/hamiltonians.jsonl (split=train, n=24) + data/lih6/teacher_canonical.jsonl (canonical ADAPT labels)",
+   "validation": {
+    "val": {
+     "n": 5,
+     "median_abs_err_mha": 0.00031,
+     "max_abs_err_mha": 0.0013,
+     "frac_under_1.6mha": 1.0,
+     "pct_under_1.6mha": 100.0,
+     "valid_frac": 1.0,
+     "mean_num_operators": 9.0,
+     "mean_cnot_count": 298.0,
+     "quantum_evals_to_propose": 0,
+     "source": "computed by scripts/build_registry.py: one-shot generation on the VAL split, exact statevector energy (genqai.evaluate.score_circuit)"
+    },
+    "test_fresh": {
+     "n": 14,
+     "median_abs_err_mha": 0.000614,
+     "max_abs_err_mha": 6.096554,
+     "frac_under_1.6mha": 0.714286,
+     "pct_under_1.6mha": 71.428571,
+     "valid_frac": 1.0,
+     "mean_num_operators": 9.0,
+     "mean_cnot_count": 298.0,
+     "source": "results_fresh/lih6/angle_interp.jsonl",
+     "display_only": true,
+     "interp": {
+      "n": 10,
+      "median_abs_err_mha": 0.000328,
+      "max_abs_err_mha": 0.000988,
+      "pct_under_1.6mha": 100.0
+     },
+     "extrap": {
+      "n": 4,
+      "median_abs_err_mha": 4.151669,
+      "max_abs_err_mha": 6.096554,
+      "pct_under_1.6mha": 0.0
+     }
+    }
+   },
+   "modes": [
+    "oneshot",
+    "refine"
+   ],
+   "limitations": [
+    "fixed problem: HLi sto-3g CAS(2e, 4o) parity mapping, 6 qubits; any other molecule, active space or mapping has no compatible generator (path C)",
+    "validated only inside the TRAIN range (r in [1, 3.5333] Å) and within the feature-distance threshold",
+    "one-shot fails beyond the training edge (r > 3.5333 Å): on the 4 test_fresh extrapolation geometries median |err| 4.15 mHa, max 6.10 mHa, 0% within 1.6 mHa (results_fresh/lih6/angle_interp.jsonl); use +refine or adapt there",
+    "1-D only; linear in r, linear extrapolation beyond the end segments"
+   ],
+   "config": {
+    "train_labels_sha256": "4fc22a9cbaacc5fef4ff7c0d64dafc66a8aebc5e360586df15bd414f73fc1b27",
+    "fit": "genqai.regression.AngleInterpolator"
+   },
+   "numpy_export": null,
+   "numpy_export_sha256": null
+  },
+  {
+   "id": "h4/transformer_sft",
+   "kind": "transformer_sft",
+   "system": "h4",
+   "checkpoint": "checkpoints/h4/sft.pt",
+   "checkpoint_sha256": "38bad59d5c8c0e8c2cb29b63e06f48cc8486858c7b1c31b2cd215726e262ee14",
+   "signature": {
+    "formula": "H4",
+    "basis": "sto-3g",
+    "charge": 0,
+    "multiplicity": 1,
+    "active": [
+     4,
+     4
+    ],
+    "mapping": "jordan_wigner",
+    "num_qubits": 8,
+    "pool_size": 26,
+    "pauli_vocab_sha256": "6f859a5910f3e4cff3bfc33195b0aeb98fc7973efb75d126c05ca3382f5297a4",
+    "pauli_vocab_size": 185,
+    "gauge_convention": "orbital-parity-argmax-ref:ac627e92dac25355"
+   },
+   "family": {
+    "kind": "linear_h4",
+    "params": [
+     "a",
+     "b"
+    ],
+    "elements": [
+     "H",
+     "H",
+     "H",
+     "H"
+    ],
+    "train_range": {
+     "a": [
+      0.8,
+      1.6
+     ],
+     "b": [
+      0.8,
+      1.8286
+     ]
+    },
+    "feature_distance": {
+     "space": "standardised gauge-fixed Pauli coefficients (genqai.features.fit_featurizer, TRAIN mean/std)",
+     "train_loo_nn_max": 5.931646,
+     "train_loo_nn_median": 3.517259,
+     "threshold": 5.931646,
+     "rule": "nearest-TRAIN distance <= 1 x max leave-one-out NN distance of TRAIN"
+    }
+   },
+   "train_dataset": "data/h4/hamiltonians.jsonl (split=train, n=35) + data/h4/teacher_canonical.jsonl (canonical ADAPT labels)",
+   "validation": {
+    "val": {
+     "n": 7,
+     "median_abs_err_mha": 0.03481,
+     "max_abs_err_mha": 4.12832,
+     "frac_under_1.6mha": 0.857143,
+     "pct_under_1.6mha": 85.714286,
+     "valid_frac": 1.0,
+     "mean_num_operators": 17.0,
+     "mean_cnot_count": 930.571429,
+     "quantum_evals_to_propose": 0,
+     "source": "computed by scripts/build_registry.py: one-shot generation on the VAL split, exact statevector energy (genqai.evaluate.score_circuit)"
+    },
+    "test_fresh": {
+     "n": 20,
+     "median_abs_err_mha": 0.555324,
+     "max_abs_err_mha": 14.64109,
+     "frac_under_1.6mha": 0.65,
+     "pct_under_1.6mha": 65.0,
+     "valid_frac": 1.0,
+     "mean_num_operators": 17.0,
+     "mean_cnot_count": 923.2,
+     "source": "results_fresh/h4/sft_oneshot.jsonl",
+     "display_only": true,
+     "interp": {
+      "n": 14,
+      "median_abs_err_mha": 0.08147,
+      "max_abs_err_mha": 6.994758,
+      "pct_under_1.6mha": 78.571429
+     },
+     "extrap": {
+      "n": 6,
+      "median_abs_err_mha": 3.370232,
+      "max_abs_err_mha": 14.64109,
+      "pct_under_1.6mha": 33.333333
+     }
+    }
+   },
+   "modes": [
+    "oneshot",
+    "bestofk",
+    "refine"
+   ],
+   "limitations": [
+    "fixed problem: H4 sto-3g CAS(4e, 4o) jordan_wigner mapping, 8 qubits; any other molecule, active space or mapping has no compatible generator (path C)",
+    "validated only inside the TRAIN range (a in [0.8, 1.6] Å, b in [0.8, 1.8286] Å) and within the feature-distance threshold",
+    "one-shot fails beyond the training edge (a > 1.6 Å, b > 1.8286 Å): on the 6 test_fresh extrapolation geometries median |err| 3.37 mHa, max 14.64 mHa, 33% within 1.6 mHa (results_fresh/h4/sft_oneshot.jsonl); use +refine or adapt there",
+    "checkpoint selected on VAL, so VAL metrics are in-sample for model selection",
+    "torch-free inference via the NumPy export (greedy one-shot only; best-of-K needs torch)"
+   ],
+   "config": {},
+   "numpy_export": "qollab/checkpoints/h4/sft.json",
+   "numpy_export_sha256": "7033f22629d67481b0c60e7a7dfc509d52df0c60f0c431b082d6e73835b5cb15"
+  },
+  {
+   "id": "h4/transformer_grpo",
+   "kind": "transformer_grpo",
+   "system": "h4",
+   "checkpoint": "checkpoints/h4/grpo.pt",
+   "checkpoint_sha256": "16c1dbd44d4b12aad701e2d0d7b4fc47ed2e6833ed40f755a184986a6cb61dad",
+   "signature": {
+    "formula": "H4",
+    "basis": "sto-3g",
+    "charge": 0,
+    "multiplicity": 1,
+    "active": [
+     4,
+     4
+    ],
+    "mapping": "jordan_wigner",
+    "num_qubits": 8,
+    "pool_size": 26,
+    "pauli_vocab_sha256": "6f859a5910f3e4cff3bfc33195b0aeb98fc7973efb75d126c05ca3382f5297a4",
+    "pauli_vocab_size": 185,
+    "gauge_convention": "orbital-parity-argmax-ref:ac627e92dac25355"
+   },
+   "family": {
+    "kind": "linear_h4",
+    "params": [
+     "a",
+     "b"
+    ],
+    "elements": [
+     "H",
+     "H",
+     "H",
+     "H"
+    ],
+    "train_range": {
+     "a": [
+      0.8,
+      1.6
+     ],
+     "b": [
+      0.8,
+      1.8286
+     ]
+    },
+    "feature_distance": {
+     "space": "standardised gauge-fixed Pauli coefficients (genqai.features.fit_featurizer, TRAIN mean/std)",
+     "train_loo_nn_max": 5.931646,
+     "train_loo_nn_median": 3.517259,
+     "threshold": 5.931646,
+     "rule": "nearest-TRAIN distance <= 1 x max leave-one-out NN distance of TRAIN"
+    }
+   },
+   "train_dataset": "data/h4/hamiltonians.jsonl (split=train, n=35): GRPO on exact energies, initialised from checkpoints/h4/sft.pt",
+   "validation": {
+    "val": {
+     "n": 7,
+     "median_abs_err_mha": 0.020704,
+     "max_abs_err_mha": 3.80721,
+     "frac_under_1.6mha": 0.857143,
+     "pct_under_1.6mha": 85.714286,
+     "valid_frac": 1.0,
+     "mean_num_operators": 17.0,
+     "mean_cnot_count": 930.571429,
+     "quantum_evals_to_propose": 0,
+     "source": "computed by scripts/build_registry.py: one-shot generation on the VAL split, exact statevector energy (genqai.evaluate.score_circuit)"
+    },
+    "test_fresh": {
+     "n": 20,
+     "median_abs_err_mha": 0.561956,
+     "max_abs_err_mha": 14.211095,
+     "frac_under_1.6mha": 0.65,
+     "pct_under_1.6mha": 65.0,
+     "valid_frac": 1.0,
+     "mean_num_operators": 17.0,
+     "mean_cnot_count": 923.2,
+     "source": "results_fresh/h4/grpo_oneshot.jsonl",
+     "display_only": true,
+     "interp": {
+      "n": 14,
+      "median_abs_err_mha": 0.095004,
+      "max_abs_err_mha": 6.783663,
+      "pct_under_1.6mha": 78.571429
+     },
+     "extrap": {
+      "n": 6,
+      "median_abs_err_mha": 3.232211,
+      "max_abs_err_mha": 14.211095,
+      "pct_under_1.6mha": 33.333333
+     }
+    }
+   },
+   "modes": [
+    "oneshot",
+    "bestofk",
+    "refine"
+   ],
+   "limitations": [
+    "fixed problem: H4 sto-3g CAS(4e, 4o) jordan_wigner mapping, 8 qubits; any other molecule, active space or mapping has no compatible generator (path C)",
+    "validated only inside the TRAIN range (a in [0.8, 1.6] Å, b in [0.8, 1.8286] Å) and within the feature-distance threshold",
+    "one-shot fails beyond the training edge (a > 1.6 Å, b > 1.8286 Å): on the 6 test_fresh extrapolation geometries median |err| 3.23 mHa, max 14.21 mHa, 33% within 1.6 mHa (results_fresh/h4/grpo_oneshot.jsonl); use +refine or adapt there",
+    "checkpoint selected on VAL, so VAL metrics are in-sample for model selection",
+    "needs torch; energy-reward GRPO did not improve held-out error over SFT (README finding 3)"
+   ],
+   "config": {},
+   "numpy_export": null,
+   "numpy_export_sha256": null
+  },
+  {
+   "id": "h4/transformer_budget",
+   "kind": "transformer_budget",
+   "system": "h4",
+   "checkpoint": "checkpoints/h4/budget.pt",
+   "checkpoint_sha256": "038967c948904b71c479b414670fa57e765cb1ab9a857ec195776c7506c70db4",
+   "signature": {
+    "formula": "H4",
+    "basis": "sto-3g",
+    "charge": 0,
+    "multiplicity": 1,
+    "active": [
+     4,
+     4
+    ],
+    "mapping": "jordan_wigner",
+    "num_qubits": 8,
+    "pool_size": 26,
+    "pauli_vocab_sha256": "6f859a5910f3e4cff3bfc33195b0aeb98fc7973efb75d126c05ca3382f5297a4",
+    "pauli_vocab_size": 185,
+    "gauge_convention": "orbital-parity-argmax-ref:ac627e92dac25355"
+   },
+   "family": {
+    "kind": "linear_h4",
+    "params": [
+     "a",
+     "b"
+    ],
+    "elements": [
+     "H",
+     "H",
+     "H",
+     "H"
+    ],
+    "train_range": {
+     "a": [
+      0.8,
+      1.6
+     ],
+     "b": [
+      0.8,
+      1.8286
+     ]
+    },
+    "feature_distance": {
+     "space": "standardised gauge-fixed Pauli coefficients (genqai.features.fit_featurizer, TRAIN mean/std)",
+     "train_loo_nn_max": 5.931646,
+     "train_loo_nn_median": 3.517259,
+     "threshold": 5.931646,
+     "rule": "nearest-TRAIN distance <= 1 x max leave-one-out NN distance of TRAIN"
+    }
+   },
+   "train_dataset": "data/h4/hamiltonians.jsonl (split=train, n=35): budget-conditioned GRPO, initialised from checkpoints/h4/budget_sft.pt",
+   "validation": {
+    "val": {
+     "n": 7,
+     "median_abs_err_mha": 0.572255,
+     "max_abs_err_mha": 4.700938,
+     "frac_under_1.6mha": 0.571429,
+     "pct_under_1.6mha": 57.142857,
+     "valid_frac": 1.0,
+     "mean_num_operators": 12.285714,
+     "mean_cnot_count": 722.285714,
+     "quantum_evals_to_propose": 0,
+     "source": "computed by scripts/build_registry.py: one-shot generation on the VAL split, exact statevector energy (genqai.evaluate.score_circuit)"
+    },
+    "test_fresh": {
+     "n": 20,
+     "median_abs_err_mha": 2.281184,
+     "max_abs_err_mha": 15.707314,
+     "frac_under_1.6mha": 0.35,
+     "pct_under_1.6mha": 35.0,
+     "valid_frac": 1.0,
+     "mean_num_operators": 12.25,
+     "mean_cnot_count": 722.0,
+     "source": "results_fresh/h4/budget_oneshot.jsonl",
+     "display_only": true,
+     "interp": {
+      "n": 14,
+      "median_abs_err_mha": 2.185234,
+      "max_abs_err_mha": 7.9776,
+      "pct_under_1.6mha": 35.714286
+     },
+     "extrap": {
+      "n": 6,
+      "median_abs_err_mha": 5.502824,
+      "max_abs_err_mha": 15.707314,
+      "pct_under_1.6mha": 33.333333
+     }
+    }
+   },
+   "modes": [
+    "oneshot",
+    "bestofk",
+    "refine"
+   ],
+   "limitations": [
+    "fixed problem: H4 sto-3g CAS(4e, 4o) jordan_wigner mapping, 8 qubits; any other molecule, active space or mapping has no compatible generator (path C)",
+    "validated only inside the TRAIN range (a in [0.8, 1.6] Å, b in [0.8, 1.8286] Å) and within the feature-distance threshold",
+    "one-shot fails beyond the training edge (a > 1.6 Å, b > 1.8286 Å): on the 6 test_fresh extrapolation geometries median |err| 5.50 mHa, max 15.71 mHa, 33% within 1.6 mHa (results_fresh/h4/budget_oneshot.jsonl); use +refine or adapt there",
+    "checkpoint selected on VAL, so VAL metrics are in-sample for model selection",
+    "needs torch; default CX budget 1015 is the VAL-chosen operating point (results/<system>/budget_oneshot.jsonl); other budgets via cnot_budget"
+   ],
+   "config": {
+    "default_cnot_budget": 1015
+   },
+   "numpy_export": null,
+   "numpy_export_sha256": null
+  },
+  {
+   "id": "h4/krr",
+   "kind": "krr",
+   "system": "h4",
+   "checkpoint": null,
+   "checkpoint_sha256": null,
+   "signature": {
+    "formula": "H4",
+    "basis": "sto-3g",
+    "charge": 0,
+    "multiplicity": 1,
+    "active": [
+     4,
+     4
+    ],
+    "mapping": "jordan_wigner",
+    "num_qubits": 8,
+    "pool_size": 26,
+    "pauli_vocab_sha256": "6f859a5910f3e4cff3bfc33195b0aeb98fc7973efb75d126c05ca3382f5297a4",
+    "pauli_vocab_size": 185,
+    "gauge_convention": "orbital-parity-argmax-ref:ac627e92dac25355"
+   },
+   "family": {
+    "kind": "linear_h4",
+    "params": [
+     "a",
+     "b"
+    ],
+    "elements": [
+     "H",
+     "H",
+     "H",
+     "H"
+    ],
+    "train_range": {
+     "a": [
+      0.8,
+      1.6
+     ],
+     "b": [
+      0.8,
+      1.8286
+     ]
+    },
+    "feature_distance": {
+     "space": "standardised gauge-fixed Pauli coefficients (genqai.features.fit_featurizer, TRAIN mean/std)",
+     "train_loo_nn_max": 5.931646,
+     "train_loo_nn_median": 3.517259,
+     "threshold": 5.931646,
+     "rule": "nearest-TRAIN distance <= 1 x max leave-one-out NN distance of TRAIN"
+    }
+   },
+   "train_dataset": "data/h4/hamiltonians.jsonl (split=train, n=35) + data/h4/teacher_canonical.jsonl (canonical ADAPT labels)",
+   "validation": {
+    "val": {
+     "n": 7,
+     "median_abs_err_mha": 0.004424,
+     "max_abs_err_mha": 0.525523,
+     "frac_under_1.6mha": 1.0,
+     "pct_under_1.6mha": 100.0,
+     "valid_frac": 1.0,
+     "mean_num_operators": 17.0,
+     "mean_cnot_count": 930.571429,
+     "quantum_evals_to_propose": 0,
+     "source": "computed by scripts/build_registry.py: one-shot generation on the VAL split, exact statevector energy (genqai.evaluate.score_circuit)"
+    },
+    "test_fresh": {
+     "n": 20,
+     "median_abs_err_mha": 0.014254,
+     "max_abs_err_mha": 0.588114,
+     "frac_under_1.6mha": 1.0,
+     "pct_under_1.6mha": 100.0,
+     "valid_frac": 1.0,
+     "mean_num_operators": 17.0,
+     "mean_cnot_count": 923.2,
+     "source": "results_fresh/h4/angle_regression.jsonl",
+     "display_only": true,
+     "interp": {
+      "n": 14,
+      "median_abs_err_mha": 0.006814,
+      "max_abs_err_mha": 0.588114,
+      "pct_under_1.6mha": 100.0
+     },
+     "extrap": {
+      "n": 6,
+      "median_abs_err_mha": 0.195219,
+      "max_abs_err_mha": 0.542643,
+      "pct_under_1.6mha": 100.0
+     }
+    }
+   },
+   "modes": [
+    "oneshot",
+    "refine"
+   ],
+   "limitations": [
+    "fixed problem: H4 sto-3g CAS(4e, 4o) jordan_wigner mapping, 8 qubits; any other molecule, active space or mapping has no compatible generator (path C)",
+    "validated only inside the TRAIN range (a in [0.8, 1.6] Å, b in [0.8, 1.8286] Å) and within the feature-distance threshold",
+    "one-shot held on the committed points but is unvalidated beyond the training edge (a > 1.6 Å, b > 1.8286 Å): on the 6 test_fresh extrapolation geometries median |err| 0.20 mHa, max 0.54 mHa, 100% within 1.6 mHa (results_fresh/h4/angle_regression.jsonl); use +refine or adapt there",
+    "needs scikit-learn; alpha/gamma/sequence rule chosen on VAL energies, so VAL metrics are in-sample for that choice"
+   ],
+   "config": {
+    "alpha": 0.0,
+    "gamma": 0.001,
+    "seq_rule": "nearest",
+    "train_labels_sha256": "7cd4538595bd7e468957941ae130c325de3416a1b53427eef169b1365494459d",
+    "fit": "genqai.regression.AngleRegressor"
+   },
+   "numpy_export": null,
+   "numpy_export_sha256": null
+  },
+  {
+   "id": "h4/nn_reuse_gauge",
+   "kind": "nn_reuse_gauge",
+   "system": "h4",
+   "checkpoint": null,
+   "checkpoint_sha256": null,
+   "signature": {
+    "formula": "H4",
+    "basis": "sto-3g",
+    "charge": 0,
+    "multiplicity": 1,
+    "active": [
+     4,
+     4
+    ],
+    "mapping": "jordan_wigner",
+    "num_qubits": 8,
+    "pool_size": 26,
+    "pauli_vocab_sha256": "6f859a5910f3e4cff3bfc33195b0aeb98fc7973efb75d126c05ca3382f5297a4",
+    "pauli_vocab_size": 185,
+    "gauge_convention": "orbital-parity-argmax-ref:ac627e92dac25355"
+   },
+   "family": {
+    "kind": "linear_h4",
+    "params": [
+     "a",
+     "b"
+    ],
+    "elements": [
+     "H",
+     "H",
+     "H",
+     "H"
+    ],
+    "train_range": {
+     "a": [
+      0.8,
+      1.6
+     ],
+     "b": [
+      0.8,
+      1.8286
+     ]
+    },
+    "feature_distance": {
+     "space": "standardised gauge-fixed Pauli coefficients (genqai.features.fit_featurizer, TRAIN mean/std)",
+     "train_loo_nn_max": 5.931646,
+     "train_loo_nn_median": 3.517259,
+     "threshold": 5.931646,
+     "rule": "nearest-TRAIN distance <= 1 x max leave-one-out NN distance of TRAIN"
+    }
+   },
+   "train_dataset": "data/h4/hamiltonians.jsonl (split=train, n=35) + data/h4/teacher.jsonl (raw ADAPT circuits)",
+   "validation": {
+    "val": {
+     "n": 7,
+     "median_abs_err_mha": 3.911943,
+     "max_abs_err_mha": 5.878313,
+     "frac_under_1.6mha": 0.142857,
+     "pct_under_1.6mha": 14.285714,
+     "valid_frac": 1.0,
+     "mean_num_operators": 16.857143,
+     "mean_cnot_count": 855.142857,
+     "quantum_evals_to_propose": 0,
+     "source": "computed by scripts/build_registry.py: one-shot generation on the VAL split, exact statevector energy (genqai.evaluate.score_circuit)"
+    },
+    "test_fresh": {
+     "n": 20,
+     "median_abs_err_mha": 1.053911,
+     "max_abs_err_mha": 4.290926,
+     "frac_under_1.6mha": 0.65,
+     "pct_under_1.6mha": 65.0,
+     "valid_frac": 1.0,
+     "mean_num_operators": 17.55,
+     "mean_cnot_count": 897.8,
+     "source": "results_fresh/h4/nn_reuse_gauge.jsonl",
+     "display_only": true,
+     "interp": {
+      "n": 14,
+      "median_abs_err_mha": 1.006808,
+      "max_abs_err_mha": 4.290926,
+      "pct_under_1.6mha": 71.428571
+     },
+     "extrap": {
+      "n": 6,
+      "median_abs_err_mha": 1.339821,
+      "max_abs_err_mha": 4.133863,
+      "pct_under_1.6mha": 50.0
+     }
+    }
+   },
+   "modes": [
+    "oneshot",
+    "refine"
+   ],
+   "limitations": [
+    "fixed problem: H4 sto-3g CAS(4e, 4o) jordan_wigner mapping, 8 qubits; any other molecule, active space or mapping has no compatible generator (path C)",
+    "validated only inside the TRAIN range (a in [0.8, 1.6] Å, b in [0.8, 1.8286] Å) and within the feature-distance threshold",
+    "one-shot fails beyond the training edge (a > 1.6 Å, b > 1.8286 Å): on the 6 test_fresh extrapolation geometries median |err| 1.34 mHa, max 4.13 mHa, 50% within 1.6 mHa (results_fresh/h4/nn_reuse_gauge.jsonl); use +refine or adapt there",
+    "copies the nearest TRAIN geometry's ADAPT circuit with gauge-mapped angles; no interpolation"
+   ],
+   "config": {
+    "train_labels_sha256": "b05ece9aafe0ca895874c0850db59ebfc1608e1cf79bd48ab3864dd55e151072"
+   },
+   "numpy_export": null,
+   "numpy_export_sha256": null
+  }
+ ]
+}
